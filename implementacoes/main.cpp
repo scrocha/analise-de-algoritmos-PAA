@@ -121,6 +121,41 @@ pair<int, int> quest_8(int arr[], int n, int x)
     return {-1, -1};
 }
 
+int quest_9(int** const arr, int n, int m)
+{
+    unordered_map<int, int> hash;
+    int count = 0;
+
+    for (int i = 0; i < n; i++)
+    {
+        for (int j = 0; j < m; j++)
+        {
+            hash[arr[i][j]]++;
+        }
+
+    }
+
+    for (int i = 0; i < n; i++)
+    {
+        bool incomum = true;
+        for (int j = 0; j < m; j++)
+        {
+            if (hash[arr[i][j]] > 1)
+            {
+                incomum = false;
+                break;
+            }
+        }
+
+        if (incomum)
+        {
+            count++;
+        }
+    }
+
+    return count;
+}
+
 
 int main() {
     int arr[] = {10, 15, 3, 7, 8};
