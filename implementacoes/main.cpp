@@ -102,6 +102,24 @@ int quest_7(int arr[], int n, int k)
     return -1;
 }
 
+pair<int, int> quest_8(int arr[], int n, int x)
+{
+    unordered_map<int, int> hash;
+
+    for (int i = 0; i < n; i++)
+    {
+        int complemento = x - arr[i];
+
+        if (hash.find(complemento) != hash.end())
+        {
+            return {hash[complemento], i};
+        }
+
+        hash[arr[i]] = i;
+    }
+
+    return {-1, -1};
+}
 
 
 int main() {
