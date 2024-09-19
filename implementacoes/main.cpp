@@ -156,6 +156,34 @@ int quest_9(int** const arr, int n, int m)
     return count;
 }
 
+int quest_10(int arr[], int n)
+{
+    int counting[n + 1] = {0};
+
+    for (int i = 0; i < n; i++)
+    {
+        arr[i] < n ? counting[arr[i]]++ : counting[n]++;
+    }
+
+    int total = 0;
+
+    for (int x = n; x >= 0; x--)
+    {
+        total += counting[x];
+        if (total >= x)
+        {
+            return x;
+        }
+    }
+
+    return -1;
+}
+
+int quest_11(int arvore[], int n)
+{
+    return 0;
+}
+
 
 int main() {
     int arr[] = {10, 15, 3, 7, 8};
