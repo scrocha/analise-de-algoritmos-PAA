@@ -6,6 +6,15 @@ using namespace std;
 
 #define swap(v, i, j) { int temp = v[i]; v[i] = v[j]; v[j] = temp; }
 
+typedef struct Node
+{
+    int data;
+    Node* left;
+    Node* right;
+
+    Node(int data) : data(data), left(nullptr), right(nullptr) {}
+} Node;
+
 int partition(int arr[], int inicio, int fim)
 {
     int pivo = arr[fim];
@@ -69,12 +78,22 @@ void merge(int arr[], int inicio1, int inicio2, int fim2)
 
 void mergeSort(int arr[], int inicio, int fim)
 {
-    if (inicio < fim -1)
+    if (inicio < fim - 1)
     {
         int meio = (inicio + fim) / 2;
         mergeSort(arr, inicio, meio);
         mergeSort(arr, meio, fim);
         merge(arr, inicio, meio, fim);
+    }
+}
+
+void inOrder(Node* root)
+{
+    if (root)
+    {
+        inOrder(root->left);
+        cout << root->data << " ";
+        inOrder(root->right);
     }
 }
 
@@ -225,7 +244,7 @@ vector<int> quest_13(int arr[], int n, int x)
             size = 1;
         }
     }
-    
+
     for (int i = bestStart; i < bestStart + maxSize; i++)
     {
         result.push_back(arr[i]);
@@ -234,19 +253,33 @@ vector<int> quest_13(int arr[], int n, int x)
     return result;
 }
 
+pair<int, int> quest_14(int arr[], int n)
+{
+    return {0, 0};
+}
+
+Node* arrayToBST(int arr[], int inicio, int fim)
+{
+    if (inicio > fim) return nullptr;
+
+    int meio = (inicio + fim) / 2;
+    Node* root = new Node(arr[meio]);
+
+    root->left = arrayToBST(arr, inicio, meio - 1);
+    root->right = arrayToBST(arr, meio + 1, fim);
+
+    return root;
+}
+
+Node* quest_15(int arr[], int n)
+{
+    mergeSort(arr, 0, n);
+    
+    return arrayToBST(arr, 0, n - 1);
+}
 
 int main() {
-    int arr[] = {1, 7, 4, 9, 10, 15, 32};
-    int n = sizeof(arr) / sizeof(arr[0]);
-    int x = 2;
 
-    vector<int> result = quest_13(arr, n, x);
-
-    cout << "O maior subconjunto onde a diferença é <= " << x << " é: ";
-    for (int i = 0; i < result.size(); i++) {
-        cout << result[i] << " ";
-    }
-    cout << endl;
 
     return 0;
 }
