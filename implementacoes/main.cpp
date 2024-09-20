@@ -6,33 +6,6 @@ using namespace std;
 
 #define swap(v, i, j) { int temp = v[i]; v[i] = v[j]; v[j] = temp; }
 
-// class Node
-// {
-//     public:
-//         Node(int key, char data):
-//             m_key(key),
-//             m_data(data),
-//             m_leftNode(nullptr),
-//             m_rightNode(nullptr),
-//             m_parentNode(nullptr) {}
-        
-//         Node & leftNode() const { return * m_leftNode; }
-//         void setLeftNode(Node * node) { m_leftNode = node;}
-
-//         Node & rightNode() const { return * m_rightNode; }
-//         void setRightNode(Node * node) { m_rightNode = node; }
-
-//         Node & parentNode() const { return * m_parentNode; }
-//         void setParentNode(Node * node) { m_parentNode =
-// node; }
-// private:
-// int m_key;
-// char m_data;
-// Node * m_leftNode;
-// Node * m_rightNode;
-// Node * m_parentNode;
-// };
-
 int partition(int arr[], int inicio, int fim)
 {
     int pivo = arr[fim];
@@ -158,7 +131,8 @@ int quest_9(int** const arr, int n, int m)
 
 int quest_10(int arr[], int n)
 {
-    int counting[n + 1] = {0};
+    int* counting = (int*) malloc((n + 1) * sizeof(int));
+    if (!counting) return -1;
 
     for (int i = 0; i < n; i++)
     {
@@ -184,19 +158,59 @@ int quest_11(int arvore[], int n)
     return 0;
 }
 
+int* quest_12(int arr[], int n, int x, int k)
+{
+    int* proximos = (int*) malloc(k*sizeof(int));
+    if (!proximos) return NULL;
 
-int main() {
-    int arr[] = {10, 15, 3, 7, 8};
-    int n = sizeof(arr) / sizeof(arr[0]);
-    int x = 13;
+    int* dists = (int*) malloc(n*sizeof(int));
+    if (!dists) { free(proximos); return NULL; }
+    
+    unordered_map<int, int> hash;
 
-    pair<int, int> result = quest_8(arr, n, x);
-
-    if (result.first != -1 && result.second != -1) {
-        cout << "Par encontrado nos índices: " << result.first << " e " << result.second << endl;
-    } else {
-        cout << "Nenhum par encontrado." << endl;
+    for (int i=0; i < n; i++)
+    {
+        int dist = abs(arr[i] - x);
+        dists[i] = dist;
+        hash[dist] = i;
     }
+
+    for (int i=0; i < k; i++)
+    {
+        int distLoc = quickSelect(dists, i, n-1, i);
+        proximos[i] = arr[hash[distLoc]];
+    }
+
+    return proximos;
+}
+
+
+int main()
+{
+    int arr[] = {1, 3, 7, 10, 15, 20, 25};
+    int n = sizeof(arr) / sizeof(arr[0]);
+    int x = 12;  // Valor de referência
+    int k = 3;   // Número de elementos mais próximos a buscar
+
+    int* result = quest_12(arr, n, x, k);
+
+    if (result)
+    {
+        printf("Os %d elementos mais próximos de %d são:\n", k, x);
+        for (int i = 0; i < k; i++)
+        {
+            printf("%d ", result[i]);
+        }
+        printf("\n");
+
+        // Libera a memória alocada
+        free(result);
+    }
+    else
+    {
+        printf("Falha na alocação de memória.\n");
+    }
+
 
     return 0;
 }
