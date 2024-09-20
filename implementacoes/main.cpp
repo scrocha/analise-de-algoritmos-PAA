@@ -46,6 +46,38 @@ int quickSelect(int arr[], int inicio, int fim, int k)
     return arr[inicio];
 }
 
+void merge(int arr[], int inicio1, int inicio2, int fim2)
+{
+    int* r = (int*) malloc((fim2 - inicio1) * sizeof(int));
+    if (!r) return;
+
+    int a = inicio1, b = inicio2, i = 0;
+    while (a < inicio2 && b < fim2)
+    {
+        r[i++] = arr[a] < arr[b] ? arr[a++] : arr[b++];
+    }
+    while (a < inicio2) r[i++] = arr[a++];
+    while (b < fim2) r[i++] = arr[b++];
+
+    for (a = inicio1; a < fim2; a++)
+    {
+        arr[a] = r[a - inicio1];
+    }
+
+    free(r);
+}
+
+void mergeSort(int arr[], int inicio, int fim)
+{
+    if (inicio < fim -1)
+    {
+        int meio = (inicio + fim) / 2;
+        mergeSort(arr, inicio, meio);
+        mergeSort(arr, meio, fim);
+        merge(arr, inicio, meio, fim);
+    }
+}
+
 int quest_7(int arr[], int n, int k)
 {
     unordered_map<int, int> hash;
@@ -160,57 +192,61 @@ int quest_11(int arvore[], int n)
 
 int* quest_12(int arr[], int n, int x, int k)
 {
-    int* proximos = (int*) malloc(k*sizeof(int));
-    if (!proximos) return NULL;
+   return nullptr; 
+}
 
-    int* dists = (int*) malloc(n*sizeof(int));
-    if (!dists) { free(proximos); return NULL; }
+vector<int> quest_13(int arr[], int n, int x)
+{
+    vector<int> result;
+
+    mergeSort(arr, 0, n);
+
+    int maxSize = 1;
+    int size = 1;
+
+    int bestStart = 0;
+    int start = 0;
+
+    for (int end = 1; end < n; end++)
+    {
+        if (arr[end] - arr[end - 1] <= x)
+        {
+            size++;
+
+            if (size > maxSize)
+            {
+                maxSize = size;
+                bestStart = start;
+            }
+        }
+        else
+        {
+            start = end;
+            size = 1;
+        }
+    }
     
-    unordered_map<int, int> hash;
-
-    for (int i=0; i < n; i++)
+    for (int i = bestStart; i < bestStart + maxSize; i++)
     {
-        int dist = abs(arr[i] - x);
-        dists[i] = dist;
-        hash[dist] = i;
+        result.push_back(arr[i]);
     }
 
-    for (int i=0; i < k; i++)
-    {
-        int distLoc = quickSelect(dists, i, n-1, i);
-        proximos[i] = arr[hash[distLoc]];
-    }
-
-    return proximos;
+    return result;
 }
 
 
-int main()
-{
-    int arr[] = {1, 3, 7, 10, 15, 20, 25};
+int main() {
+    int arr[] = {1, 7, 4, 9, 10, 15, 32};
     int n = sizeof(arr) / sizeof(arr[0]);
-    int x = 12;  // Valor de referência
-    int k = 3;   // Número de elementos mais próximos a buscar
+    int x = 2;
 
-    int* result = quest_12(arr, n, x, k);
+    vector<int> result = quest_13(arr, n, x);
 
-    if (result)
-    {
-        printf("Os %d elementos mais próximos de %d são:\n", k, x);
-        for (int i = 0; i < k; i++)
-        {
-            printf("%d ", result[i]);
-        }
-        printf("\n");
-
-        // Libera a memória alocada
-        free(result);
+    cout << "O maior subconjunto onde a diferença é <= " << x << " é: ";
+    for (int i = 0; i < result.size(); i++) {
+        cout << result[i] << " ";
     }
-    else
-    {
-        printf("Falha na alocação de memória.\n");
-    }
-
+    cout << endl;
 
     return 0;
 }
