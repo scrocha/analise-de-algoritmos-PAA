@@ -1,5 +1,6 @@
 #include <iostream>
 #include <unordered_map>
+#include <queue>
 #include <vector>
 #include <climits>
 
@@ -239,39 +240,27 @@ int quest_11(Node* root)
     return minDiff;
 }
 
-
 int* quest_12(int arr[], int n, int x, int k)
 {
     int* result = (int*) malloc(k * sizeof(int));
-    if (!result) return nullptr;
 
-    int* diff = (int*) malloc(n * sizeof(int));
-    if (!diff)
+    priority_queue<pair<int, int>> maxHeap;
+
+    for (int i = 0; i < n; ++i)
     {
-        free(result);
-        return nullptr;
+        int distance = abs(arr[i] - x);
+        
+        maxHeap.push({distance, arr[i]});
+        if (maxHeap.size() > k) { maxHeap.pop(); }
+
     }
-
-    unordered_map<int, int> hash;
-
-    for (int i = 0; i < n; i++)
+    int count = k - 1;
+    while (!maxHeap.empty())
     {
-        diff[i] = abs(arr[i] - x);
-        hash[arr[i]] = diff[i];
+        result[count--] = maxHeap.top().second;
+        maxHeap.pop();
+        if (count < 0) break;
     }
-
-    int value = quickSelectMOM(diff, 0, n - 1, k - 1);
-    int count = 0;
-
-    for (int i = 0; i < n && count < k; i++)
-    {
-        if (hash[arr[i]] <= value)
-        {
-            result[count++] = arr[i];
-        }
-    }
-
-    free(diff);
 
     return result;
 }
@@ -317,7 +306,24 @@ vector<int> quest_13(int arr[], int n, int x)
 
 pair<int, int> quest_14(int arr[], int n)
 {
-    return {0, 0};
+    int i = 0, j = n - 1, maixmo = 0;
+    pair<int, int> result = {0, 0};
+
+    while (i < j)
+    {
+        int produto = (j - i) * min(arr[i], arr[j]);
+
+        if (produto > maixmo)
+        {
+            maixmo = produto;
+            result = {i, j};
+        }
+        
+        if (arr[i] < arr[j]) { i++; }
+        else { j--; }
+    }
+
+    return result;
 }
 
 Node* arrayToBST(int arr[], int inicio, int fim)
@@ -340,18 +346,7 @@ Node* quest_15(int arr[], int n)
     return arrayToBST(arr, 0, n - 1);
 }
 
-int main()
+int main() 
 {
-    int arr[] = {1, 5, 10, 15, 20, 25, 27};
-    int n = sizeof(arr) / sizeof(arr[0]);
-    int x = 25;
-    int k = 3;
-
-    int* arr2 = quest_12(arr, n, x, k);
-    for (int i = 0; i < k; i++)
-    {
-        cout << arr2[i] << ' ';
-    }
-    free(arr2);
     return 0;
 }
