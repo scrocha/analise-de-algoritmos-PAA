@@ -140,7 +140,6 @@ pair<int, int> quest_8(int arr[], int n, int x)
         {
             return {hash[complemento], i};
         }
-
         hash[arr[i]] = i;
     }
 
@@ -158,7 +157,6 @@ int quest_9(int** const arr, int n, int m)
         {
             hash[arr[i][j]]++;
         }
-
     }
 
     for (int i = 0; i < n; i++)
@@ -207,37 +205,35 @@ int quest_10(int arr[], int n)
 
     return -1;
 }
-
-int BSTsearch(Node* current, int prev, int minDiff)
+void BSTtoVector(Node* root, vector<int>& result)
 {
-    if (current)
-    {
-        minDiff = BSTsearch(current->left, prev, minDiff);
+    if (root == nullptr) return;
+    
+    BSTtoVector(root->left, result);
 
-        if (prev != -1)
-        {
-            minDiff = min(minDiff, abs(current->data - prev));
-            cout << current->data << ' ' << prev << ' ' << minDiff << endl;
-        }
-        prev = current->data;
+    result.push_back(root->data);
 
-        minDiff = BSTsearch(current->right, prev, minDiff);
-    }
-
-    return minDiff;
+    BSTtoVector(root->right, result);
 }
 
 int quest_11(Node* root)
 {
-    int prev = -1;
-    int minDiff = INT_MAX;
-    if (!root) return -1;
-    else if (!root->left && !root->right) return -1;
-    else if (!root->left && root->right) minDiff = root->right->data - root->data;
-    else if (root->left && !root->right) minDiff = root->data - root->left->data;
+    vector<int> result;
+    BSTtoVector(root, result);
 
-    minDiff = BSTsearch(root, prev, minDiff);
-    return minDiff;
+    int n = result.size();
+    int best = INT_MAX;
+
+    for (int i = 1; i < n; i++)
+    {
+        int diff = result[i] - result[i - 1];
+        if (diff < best)
+        {
+            best = diff;
+        }
+    }
+
+    return best;
 }
 
 int* quest_12(int arr[], int n, int x, int k)
@@ -346,7 +342,20 @@ Node* quest_15(int arr[], int n)
     return arrayToBST(arr, 0, n - 1);
 }
 
-int main() 
-{
+int main() {
+    // Testes
+    int arr1[] = {3, 0, 2, 22, 1, 4, 2, 7};
+    int n = sizeof(arr1) / sizeof(arr1[0]);
+    Node* root = quest_15(arr1, n);
+
+    vector<int> result;
+
+    BSTtoVector(root, result);
+
+    for (int i = 0; i < result.size(); i++)
+    {
+        cout << result[i] << " ";
+    }
+
     return 0;
 }
