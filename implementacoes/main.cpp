@@ -1,6 +1,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <vector>
+#include <climits>
 
 using namespace std;
 
@@ -33,7 +34,7 @@ int partition(int arr[], int inicio, int fim)
     return i + 1;
 }
 
-int quickSelect(int arr[], int inicio, int fim, int k)
+int quickSelectMOM(int arr[], int inicio, int fim, int k)
 {
     if (inicio <= fim)
     {
@@ -46,10 +47,10 @@ int quickSelect(int arr[], int inicio, int fim, int k)
 
         if (pivo > k)
         {
-            return quickSelect(arr, inicio, pivo - 1, k);
+            return quickSelectMOM(arr, inicio, pivo - 1, k);
         }
 
-        return quickSelect(arr, pivo + 1, fim, k);
+        return quickSelectMOM(arr, pivo + 1, fim, k);
     }
 
     return arr[inicio];
@@ -113,7 +114,7 @@ int quest_7(int arr[], int n, int k)
         freq.push_back(pair.second);
     }
 
-    int k_freq = quickSelect(freq.data(), 0, freq.size() - 1, freq.size() - k);
+    int k_freq = quickSelectMOM(freq.data(), 0, freq.size() - 1, freq.size() - k);
 
     for (const auto& pair : hash)
     {
@@ -195,8 +196,10 @@ int quest_10(int arr[], int n)
     for (int x = n; x >= 0; x--)
     {
         total += counting[x];
-        if (total >= x)
+        cout << total << ' ' << counting[x] << endl;
+        if (total == x)
         {
+            free(counting);
             return x;
         }
     }
@@ -204,14 +207,73 @@ int quest_10(int arr[], int n)
     return -1;
 }
 
-int quest_11(int arvore[], int n)
+int BSTsearch(Node* current, int prev, int minDiff)
 {
-    return 0;
+    if (current)
+    {
+        minDiff = BSTsearch(current->left, prev, minDiff);
+
+        if (prev != -1)
+        {
+            minDiff = min(minDiff, abs(current->data - prev));
+            cout << current->data << ' ' << prev << ' ' << minDiff << endl;
+        }
+        prev = current->data;
+
+        minDiff = BSTsearch(current->right, prev, minDiff);
+    }
+
+    return minDiff;
 }
+
+int quest_11(Node* root)
+{
+    int prev = -1;
+    int minDiff = INT_MAX;
+    if (!root) return -1;
+    else if (!root->left && !root->right) return -1;
+    else if (!root->left && root->right) minDiff = root->right->data - root->data;
+    else if (root->left && !root->right) minDiff = root->data - root->left->data;
+
+    minDiff = BSTsearch(root, prev, minDiff);
+    return minDiff;
+}
+
 
 int* quest_12(int arr[], int n, int x, int k)
 {
-   return nullptr; 
+    int* result = (int*) malloc(k * sizeof(int));
+    if (!result) return nullptr;
+
+    int* diff = (int*) malloc(n * sizeof(int));
+    if (!diff)
+    {
+        free(result);
+        return nullptr;
+    }
+
+    unordered_map<int, int> hash;
+
+    for (int i = 0; i < n; i++)
+    {
+        diff[i] = abs(arr[i] - x);
+        hash[arr[i]] = diff[i];
+    }
+
+    int value = quickSelectMOM(diff, 0, n - 1, k - 1);
+    int count = 0;
+
+    for (int i = 0; i < n && count < k; i++)
+    {
+        if (hash[arr[i]] <= value)
+        {
+            result[count++] = arr[i];
+        }
+    }
+
+    free(diff);
+
+    return result;
 }
 
 vector<int> quest_13(int arr[], int n, int x)
@@ -278,8 +340,18 @@ Node* quest_15(int arr[], int n)
     return arrayToBST(arr, 0, n - 1);
 }
 
-int main() {
+int main()
+{
+    int arr[] = {1, 5, 10, 15, 20, 25, 27};
+    int n = sizeof(arr) / sizeof(arr[0]);
+    int x = 25;
+    int k = 3;
 
-
+    int* arr2 = quest_12(arr, n, x, k);
+    for (int i = 0; i < k; i++)
+    {
+        cout << arr2[i] << ' ';
+    }
+    free(arr2);
     return 0;
 }
