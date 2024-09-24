@@ -8,6 +8,8 @@ using namespace std;
 
 #define swap(v, i, j) { int temp = v[i]; v[i] = v[j]; v[j] = temp; }
 
+#define swap2(v, i, j) { pair<int, int> temp = v[i]; v[i] = v[j]; v[j] = temp; }
+
 typedef struct Node
 {
     int data;
@@ -57,22 +59,65 @@ int quickSelectMOM(int arr[], int inicio, int fim, int k)
     return arr[inicio];
 }
 
-void merge(int arr[], int inicio1, int inicio2, int fim2)
+void heapify(int arr[], int n, int i)
 {
-    int* r = (int*) malloc((fim2 - inicio1) * sizeof(int));
+    int index = i;
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+    
+    if (right < n && arr[right] > arr[index])
+    {
+        index = right;
+    }
+
+    else if (left < n && arr[left] > arr[index])
+    {
+        index = left;
+    }
+
+    if (index != i)
+    {
+        swap(arr, i, index);
+        heapify(arr, n, index);
+    }
+
+}
+
+void buildHeap(int arr[], int n)
+{
+    for (int i = n / 2 - 1; i >= 0; i--)
+    {
+        heapify(arr, n, i);
+    }
+}
+
+void heapSort(int arr[], int n)
+{
+    buildHeap(arr, n);
+
+    for (int i = n - 1; i > 0; i--)
+    {
+        swap(arr, 0, i);
+        heapify(arr, i, 0);
+    }
+}
+
+void merge(int arr[], int inicio, int meio, int fim)
+{
+    int* r = (int*) malloc((fim - inicio) * sizeof(int));
     if (!r) return;
 
-    int a = inicio1, b = inicio2, i = 0;
-    while (a < inicio2 && b < fim2)
+    int a = inicio, b = meio, i = 0;
+    while (a < meio && b < fim)
     {
         r[i++] = arr[a] < arr[b] ? arr[a++] : arr[b++];
     }
-    while (a < inicio2) r[i++] = arr[a++];
-    while (b < fim2) r[i++] = arr[b++];
+    while (a < meio) r[i++] = arr[a++];
+    while (b < fim) r[i++] = arr[b++];
 
-    for (a = inicio1; a < fim2; a++)
+    for (a = inicio; a < fim; a++)
     {
-        arr[a] = r[a - inicio1];
+        arr[a] = r[a - inicio];
     }
 
     free(r);
@@ -205,6 +250,7 @@ int quest_10(int arr[], int n)
 
     return -1;
 }
+
 void BSTtoVector(Node* root, vector<int>& result)
 {
     if (root == nullptr) return;
@@ -236,27 +282,74 @@ int quest_11(Node* root)
     return best;
 }
 
+void heapify(pair<int, int>* arr, int n, int i)
+{
+    int index = i;
+    int left = 2 * i + 1;
+    int right = 2 * i + 2;
+    
+    if (left < n && arr[left].first > arr[index].first)
+    {
+        index = left;
+    }
+    
+    if (right < n && arr[right].first > arr[index].first)
+    {
+        index = right;
+    }
+
+    if (index != i)
+    {
+        swap2(arr, i, index);
+        heapify(arr, n, index);
+    }
+
+}
+
+void buildHeap(pair<int, int>* arr, int n)
+{
+    for (int i = n / 2 - 1; i >= 0; i--)
+    {
+        heapify(arr, n, i);
+    }
+}
+
+// Função principal para encontrar os k elementos mais próximos de x
 int* quest_12(int arr[], int n, int x, int k)
 {
+    if (k > n || k <= 0) return nullptr;
+
     int* result = (int*) malloc(k * sizeof(int));
+    if (!result) return nullptr;
 
-    priority_queue<pair<int, int>> maxHeap;
-
-    for (int i = 0; i < n; ++i)
+    pair<int, int>* maxHeap = (pair<int, int>*) malloc(k * sizeof(pair<int, int>));
+    if (!maxHeap) { free(result); return nullptr; }
+    
+    for (int i = 0; i < k; ++i)
     {
         int distance = abs(arr[i] - x);
-        
-        maxHeap.push({distance, arr[i]});
-        if (maxHeap.size() > k) { maxHeap.pop(); }
+        maxHeap[i] = {distance, arr[i]};
+    }
 
-    }
-    int count = k - 1;
-    while (!maxHeap.empty())
+    buildHeap(maxHeap, k);
+
+    for (int i = k; i < n; ++i)
     {
-        result[count--] = maxHeap.top().second;
-        maxHeap.pop();
-        if (count < 0) break;
+        int distance = abs(arr[i] - x);
+
+        if (distance < maxHeap[0].first)
+        {
+            maxHeap[0] = {distance, arr[i]};
+            heapify(maxHeap, k, 0);
+        }
     }
+
+    for (int i = 0; i < k; ++i)
+    {
+        result[k-1 - i] = maxHeap[i].second;
+    }
+
+    free(maxHeap);
 
     return result;
 }
@@ -343,19 +436,21 @@ Node* quest_15(int arr[], int n)
 }
 
 int main() {
-    // Testes
-    int arr1[] = {3, 0, 2, 22, 1, 4, 2, 7};
-    int n = sizeof(arr1) / sizeof(arr1[0]);
-    Node* root = quest_15(arr1, n);
-
-    vector<int> result;
-
-    BSTtoVector(root, result);
-
-    for (int i = 0; i < result.size(); i++)
-    {
-        cout << result[i] << " ";
+    int arr[] = {5, 6, 7, 8, 9};
+    int n = sizeof(arr) / sizeof(arr[0]);
+    int x = 6;
+    int k = 2;
+    
+    int* closest = quest_12(arr, n, x, k);
+    
+    // Exibir os k elementos mais próximos
+    for (int i = 0; i < k; ++i) {
+        cout << closest[i] << " ";
     }
+    cout << endl;
+
+    // Liberar a memória do resultado
+    free(closest);
 
     return 0;
 }
