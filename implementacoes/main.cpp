@@ -37,7 +37,7 @@ int partition(int arr[], int inicio, int fim)
     return i + 1;
 }
 
-int quickSelectMOM(int arr[], int inicio, int fim, int k)
+int quickSelect(int arr[], int inicio, int fim, int k)
 {
     if (inicio <= fim)
     {
@@ -50,10 +50,10 @@ int quickSelectMOM(int arr[], int inicio, int fim, int k)
 
         if (pivo > k)
         {
-            return quickSelectMOM(arr, inicio, pivo - 1, k);
+            return quickSelect(arr, inicio, pivo - 1, k);
         }
 
-        return quickSelectMOM(arr, pivo + 1, fim, k);
+        return quickSelect(arr, pivo + 1, fim, k);
     }
 
     return arr[inicio];
@@ -144,6 +144,65 @@ void inOrder(Node* root)
     }
 }
 
+int partition2(int arr[], int inicio, int fim, int pivo)
+{
+    int i = inicio - 1;
+
+    for (int j = inicio; j < fim; j++)
+    {
+        if (arr[j] < pivo)
+        {
+            i++;
+            swap(arr, i, j);
+        }
+    }
+    return i + 1;
+}
+
+int medianOf(int arr[], int n)
+{
+    mergeSort(arr, 0, n);
+    return arr[n / 2];
+}
+
+int selectMOM(int arr[], int inicio, int fim, int k)
+{
+    int n = fim - inicio + 1;
+    if (k <= 0 || k > n) return -1;
+
+    int grupos = (n + 4) / 5;
+    int* median = new int[grupos];
+    
+    int i = 0;
+    int pos = inicio;
+
+    while (pos < fim)
+    {
+        int size = min(5, fim - pos + 1);
+        median[i++] = medianOf(&arr[pos], size);
+        pos += 5;
+    }
+
+    int mom = (i == 1) ? median[i - 1] : selectMOM(median, 0, i - 1, i / 2);
+
+    int j = partition2(arr, inicio, fim, mom);
+
+    if (j - inicio == k - 1) return arr[j];
+    if (j - inicio > k - 1) return selectMOM(arr, inicio, j - 1, k);
+    return selectMOM(arr, j + 1, fim, k - j + inicio - 1);
+}
+
+int quickSelectMOM(int arr[], int inicio, int fim, int k)
+{
+    if (inicio <= fim)
+    {
+        int pivo = selectMOM(arr, inicio, fim, k);
+        return pivo;
+    }
+
+    return -1;
+}
+
 int quest_7(int arr[], int n, int k)
 {
     unordered_map<int, int> hash;
@@ -160,7 +219,7 @@ int quest_7(int arr[], int n, int k)
         freq.push_back(pair.second);
     }
 
-    int k_freq = quickSelectMOM(freq.data(), 0, freq.size() - 1, freq.size() - k);
+    int k_freq = quickSelectMOM(freq.data(), 0, freq.size() - 1, freq.size() + 1 - k);
 
     for (const auto& pair : hash)
     {
@@ -227,28 +286,7 @@ int quest_9(int** const arr, int n, int m)
 
 int quest_10(int arr[], int n)
 {
-    int* counting = (int*) malloc((n + 1) * sizeof(int));
-    if (!counting) return -1;
-
-    for (int i = 0; i < n; i++)
-    {
-        arr[i] < n ? counting[arr[i]]++ : counting[n]++;
-    }
-
-    int total = 0;
-
-    for (int x = n; x >= 0; x--)
-    {
-        total += counting[x];
-        cout << total << ' ' << counting[x] << endl;
-        if (total == x)
-        {
-            free(counting);
-            return x;
-        }
-    }
-
-    return -1;
+    return 0;
 }
 
 void BSTtoVector(Node* root, vector<int>& result)
@@ -314,7 +352,6 @@ void buildHeap(pair<int, int>* arr, int n)
     }
 }
 
-// Função principal para encontrar os k elementos mais próximos de x
 int* quest_12(int arr[], int n, int x, int k)
 {
     if (k > n || k <= 0) return nullptr;
@@ -350,7 +387,6 @@ int* quest_12(int arr[], int n, int x, int k)
     }
 
     free(maxHeap);
-
     return result;
 }
 
@@ -435,22 +471,7 @@ Node* quest_15(int arr[], int n)
     return arrayToBST(arr, 0, n - 1);
 }
 
-int main() {
-    int arr[] = {5, 6, 7, 8, 9};
-    int n = sizeof(arr) / sizeof(arr[0]);
-    int x = 6;
-    int k = 2;
-    
-    int* closest = quest_12(arr, n, x, k);
-    
-    // Exibir os k elementos mais próximos
-    for (int i = 0; i < k; ++i) {
-        cout << closest[i] << " ";
-    }
-    cout << endl;
-
-    // Liberar a memória do resultado
-    free(closest);
-
+int main()
+{
     return 0;
 }
