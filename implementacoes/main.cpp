@@ -223,10 +223,7 @@ int quest_7(int arr[], int n, int k)
 
     for (const auto& pair : hash)
     {
-        if (pair.second == k_freq)
-        {
-            return pair.first;
-        }
+        if (pair.second == k_freq) return pair.first;
     }
 
     return -1;
@@ -286,7 +283,21 @@ int quest_9(int** const arr, int n, int m)
 
 int quest_10(int arr[], int n)
 {
-    return 0;
+    unordered_map<int, int> freq;
+
+    for (int i = 0; i < n; i++)
+    {
+        arr[i] < n ? freq[arr[i]]++: freq[n]++;
+    }
+
+    int count = 0;
+    for (int i = n; i >= 0; i--)
+    {
+        count += freq[i];
+        if (count >= i) return i;
+    }
+
+    return -1;
 }
 
 void BSTtoVector(Node* root, vector<int>& result)
