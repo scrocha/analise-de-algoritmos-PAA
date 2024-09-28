@@ -293,7 +293,7 @@ int quest_10(int arr[], int n)
     int count = 0;
     for (int i = n; i >= 0; i--)
     {
-        if (freq[i] == 0} continue;
+        if (freq[i] == 0) continue;
         count += freq[i];
         if (count >= i) return i;
     }
