@@ -408,35 +408,30 @@ vector<int> quest_13(int arr[], int n, int x)
 
     mergeSort(arr, 0, n);
 
-    int maxSize = 1;
-    int size = 1;
+    int bestSize = 0;
+    int bestI = 0;
+    int bestJ = 0;
 
-    int bestStart = 0;
-    int start = 0;
+    int j = 0;
 
-    for (int end = 1; end < n; end++)
+    for (int i = 0; i < n; i++)
     {
-        if (arr[end] - arr[end - 1] <= x)
+        if (arr[i] - arr[j] > x)
         {
-            size++;
-
-            if (size > maxSize)
-            {
-                maxSize = size;
-                bestStart = start;
-            }
+            while (arr[i] - arr[j] > x && j < i) { j++; }
         }
-        else
+
+        int size = i - j + 1;
+
+        if (size > bestSize)
         {
-            start = end;
-            size = 1;
+            bestSize = size;
+            bestI = i;
+            bestJ = j;
         }
     }
 
-    for (int i = bestStart; i < bestStart + maxSize; i++)
-    {
-        result.push_back(arr[i]);
-    }
+    for (int k = bestJ; k <= bestI; k++) { result.push_back(arr[k]); }
 
     return result;
 }
