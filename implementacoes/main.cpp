@@ -84,6 +84,144 @@ List* computeL2_a(AdjList* adjList, List* L1)
 }
 
 
+int ancestorCount(AdjList* adjList, int vertex, List* L2)
+{
+    int count = 0;
+
+    Node* temp = L2->head;
+    while (temp)
+    {
+        int current = temp->vertex;
+        stack<int> stack;
+
+        bool* visited = new bool[adjList->V];
+        for (int i = 0; i < adjList->V; i++) visited[i] = false;
+
+        stack.push(current);
+        visited[current] = true;
+
+        while (!stack.empty())
+        {
+            int currentVertex = stack.top();
+            stack.pop();
+
+            Node* temp2 = adjList->adj[currentVertex].head;
+            while (temp2)
+            {
+                if (temp2->vertex == vertex)
+                {
+                    count++;
+                    break;
+                }
+                if (!visited[temp2->vertex])
+                {
+                    stack.push(temp2->vertex);
+                    visited[temp2->vertex] = true;
+                }
+                temp2 = temp2->next;
+            }
+        }
+
+        delete[] visited;
+        temp = temp->next;
+    }
+    return count;
+}
+
+void dfsAncestors(AdjList* adjList, List* L2)
+{
+    int numVertices = adjList->V;
+    bool* inL2 = new bool[numVertices];
+    for (int i = 0; i < numVertices; i++) { inL2[i] = false; }
+    
+    while (true)
+    {
+        bool added = false;
+        for (int i = 0; i < numVertices; i++)
+        {
+            cout << "i: " << i << "| anc: " << ancestorCount(adjList, i, L2) << endl;
+            if (!inL2[i] && ancestorCount(adjList, i, L2) % 2 != 0)
+            {
+                if (!L2->contains(i))
+                {
+                    L2->add(i);
+                    inL2[i] = true;
+                    added = true;
+                }
+            }
+        }
+        if (!added) { break; }
+    }
+
+    delete[] inL2;
+}
+
+List* computeL2_b(AdjList* adjList, List* L1)
+{
+    List* L2 = new List();
+    
+    Node* temp = L1->head;
+    while (temp)
+    {
+        L2->add(temp->vertex);
+        temp = temp->next;
+    }
+    if (L2->head == nullptr) { return L2; }
+
+    dfsAncestors(adjList, L2);
+
+    return L2;
+}
+
+int olderCousinCount(AdjList* adjList, int vertex, List* L2)
+{
+
+}
+
+void dfsOlderCousins(AdjList* adjList, List* L2)
+{
+    int numVertices = adjList->V;
+    bool* inL2 = new bool[numVertices];
+    for (int i = 0; i < numVertices; i++) { inL2[i] = false; }
+
+    while (true)
+    {
+        bool added = false;
+        for (int i = 0; i < numVertices; i++)
+        {
+            cout << "i: " << i << "| older cousins: " << olderCousinCount(adjList, i, L2) << endl;
+            if (!inL2[i] && olderCousinCount(adjList, i, L2) % 2 != 0)
+            {
+                if (!L2->contains(i))
+                {
+                    L2->add(i);
+                    inL2[i] = true;
+                    added = true;
+                }
+            }
+        }
+        if (!added) { break; }
+    }
+
+    delete[] inL2;
+}
+List* computeL2_c(AdjList* adjList, List* L1)
+{
+    List* L2 = new List();
+    
+    Node* temp = L1->head;
+    while (temp)
+    {
+        L2->add(temp->vertex);
+        temp = temp->next;
+    }
+    if (L2->head == nullptr) { return L2; }
+
+    dfsOlderCousins(adjList, L2);
+
+    return L2;
+}
+
 int main()
 {
 
