@@ -175,25 +175,50 @@ List* computeL2_b(AdjList* adjList, List* L1)
 
 int olderCousinCount(AdjList* adjList, int vertex, List* L2)
 {
+    int count = 0;
 
+    int parent = -1;
+    for (int i = 0; i < adjList->V; i++)
+    {
+        Node* temp = adjList->adj[i].head;
+        while (temp) {
+            if (temp->vertex == vertex)
+            {
+                parent = i;
+                break;
+            }
+            temp = temp->next;
+        }
+        if (parent != -1) break;
+    }
+
+    if (parent == -1) return 0;
+
+    Node* sibling = adjList->adj[parent].head;
+    while (sibling)
+    {
+        if (sibling->vertex != vertex && sibling->vertex < vertex && L2->contains(sibling->vertex))
+        {
+            count++;
+        }
+        sibling = sibling->next;
+    }
+
+    return count;
 }
 
-void dfsOlderCousins(AdjList* adjList, List* L2)
-{
+
+void dfsOlderCousins(AdjList* adjList, List* L2) {
     int numVertices = adjList->V;
     bool* inL2 = new bool[numVertices];
     for (int i = 0; i < numVertices; i++) { inL2[i] = false; }
 
-    while (true)
-    {
+    while (true) {
         bool added = false;
-        for (int i = 0; i < numVertices; i++)
-        {
+        for (int i = 0; i < numVertices; i++) {
             cout << "i: " << i << "| older cousins: " << olderCousinCount(adjList, i, L2) << endl;
-            if (!inL2[i] && olderCousinCount(adjList, i, L2) % 2 != 0)
-            {
-                if (!L2->contains(i))
-                {
+            if (!inL2[i] && olderCousinCount(adjList, i, L2) % 2 != 0) {
+                if (!L2->contains(i)) {
                     L2->add(i);
                     inL2[i] = true;
                     added = true;
@@ -205,13 +230,13 @@ void dfsOlderCousins(AdjList* adjList, List* L2)
 
     delete[] inL2;
 }
-List* computeL2_c(AdjList* adjList, List* L1)
-{
+
+List* computeL2_c(AdjList* adjList, List* L1) {
     List* L2 = new List();
-    
+
     Node* temp = L1->head;
-    while (temp)
-    {
+
+    while (temp) {
         L2->add(temp->vertex);
         temp = temp->next;
     }
@@ -221,6 +246,7 @@ List* computeL2_c(AdjList* adjList, List* L1)
 
     return L2;
 }
+
 
 int main()
 {
