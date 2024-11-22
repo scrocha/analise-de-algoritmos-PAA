@@ -134,21 +134,134 @@ struct AdjList
     }
 };
 
-struct Edge
+struct WeightedNode
 {
-    Vertex v;
-    Vertex w;
+    Vertex vertex;
+    int weight;
+    WeightedNode* next;
 
-    Edge(Vertex v, Vertex w) : v(v), w(w) {}
+    WeightedNode(Vertex val, int w) : vertex(val), weight(w), next(nullptr) {}
 };
 
-struct WeightedEdge
+struct WeightedList
 {
-    Vertex v;
-    Vertex w;
-    double weight;
+    WeightedNode* head;
 
-    WeightedEdge(Vertex v, Vertex w, double weight) : v(v), w(w), weight(weight) {}
+    WeightedList() : head(nullptr) {}
+
+    void add(Vertex vertex, int weight)
+    {
+        WeightedNode* newNode = new WeightedNode(vertex, weight);
+        newNode->next = head;
+        head = newNode;
+    }
+
+    ~WeightedList()
+    {
+        WeightedNode* current = head;
+        while (current != nullptr)
+        {
+            WeightedNode* next = current->next;
+            delete current;
+            current = next;
+        }
+    }
+
+    void print()
+    {
+        WeightedNode* current = head;
+        cout << "[";
+        while (current != nullptr)
+        {
+            cout << " " << current->vertex << " (" << current->weight << "),";
+            current = current->next;
+        }
+        cout << "]" << endl;
+    }
+
+    bool contains(Vertex vertex)
+    {
+        WeightedNode* current = head;
+        while (current != nullptr)
+        {
+            if (current->vertex == vertex) { return true; }
+            current = current->next;
+        }
+        return false;
+    }
+
+    void remove(Vertex vertex)
+    {
+        WeightedNode* current = head;
+        WeightedNode* previous = nullptr;
+        while (current != nullptr)
+        {
+            if (current->vertex == vertex)
+            {
+                if (previous == nullptr) { head = current->next; }
+                else { previous->next = current->next; }
+                delete current;
+                return;
+            }
+            previous = current;
+            current = current->next;
+        }
+    }
 };
+
+struct WeightedAdjList
+{
+    WeightedList* adj;
+    int V;
+    int E;
+
+    WeightedAdjList(int V) : V(V), E(0) { adj = new WeightedList[V]; }
+
+    ~WeightedAdjList()
+    {
+        delete[] adj;
+    }
+
+    void addEdge(Vertex v, Vertex w, int weight)
+    {
+        adj[v].add(w, weight);
+        E++;
+    }
+
+    void addEdgeDual(Vertex v, Vertex w, int weight)
+    {
+        adj[v].add(w, weight);
+        adj[w].add(v, weight);
+        E += 2;
+    }
+
+    bool containsEdge(Vertex v, Vertex w)
+    {
+        return adj[v].contains(w);
+    }
+
+    void print()
+    {
+        for (int v = 0; v < V; v++)
+        {
+            cout << v << ": ";
+            adj[v].print();
+        }
+    }
+
+    void removeEdge(Vertex v, Vertex w)
+    {
+        adj[v].remove(w);
+        E--;
+    }
+
+    void removeEdgeDual(Vertex v, Vertex w)
+    {
+        adj[v].remove(w);
+        adj[w].remove(v);
+        E -= 2;
+    }
+};
+
 
 #endif
