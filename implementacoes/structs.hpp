@@ -263,5 +263,4 @@ struct WeightedAdjList
     }
 };
 
-
 #endif
