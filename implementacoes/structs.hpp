@@ -283,6 +283,7 @@ struct MinHeap
     {
         array = new MinHeapNode*[capacity];
         pos = new int[capacity];
+        for (int i = 0; i < capacity; i++) { pos[i] = -1; }
     }
 
     ~MinHeap()
@@ -367,12 +368,17 @@ struct MinHeap
         if (size == capacity) { return; }
 
         MinHeapNode* node = new MinHeapNode(v, dist);
-        array[size] = node;
 
-        pos[v] = size;
-        ++size;
+        array[size] = node;
+        pos[v] = ++size;
 
         decreaseKey(v, dist);
+    }
+
+    void insertOrUpdate(Vertex v, int dist)
+    {
+        if (pos[v] == -1) { insert(v, dist); }
+        else { decreaseKey(v, dist); }
     }
 };
 

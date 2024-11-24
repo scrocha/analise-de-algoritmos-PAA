@@ -7,7 +7,7 @@
 
 using namespace std;
 
-#define INF INT_MAX
+#define INFPOS INT_MAX
 
 int descendentCount(AdjList* adjList, int vertex, List* L2)
 {
@@ -334,16 +334,15 @@ List* computePath(AdjList* adjList, Vertex start, Vertex end, List* L)
     return path;
 }
 
-
-int* Djisktra(WeightedAdjList* adjList, Vertex start)
+void Djisktra(WeightedAdjList* adjList, Vertex start, int* dist, int* parent)
 {
-    if (start < 0 || start >= adjList->V) { return nullptr; }
+    if (start < 0 || start >= adjList->V) { return; }
     
-    int* dist = new int[adjList->V];
     bool* visited = new bool[adjList->V];
     for (int i = 0; i < adjList->V; i++)
     {
-        dist[i] = INF;
+        dist[i] = INFPOS;
+        parent[i] = -1;
         visited[i] = false;
     }
     dist[start] = 0;
@@ -353,27 +352,67 @@ int* Djisktra(WeightedAdjList* adjList, Vertex start)
 
     while (!heap->isEmpty())
     {
-        MinHeapNode* minHeapNode = heap->extractMin();
-        int fromVertex = minHeapNode->v;
+        MinHeapNode* fromNode = heap->extractMin();
+        int fromVertex = fromNode->v;
+        if (dist[fromVertex] == INFPOS) { break; }
         visited[fromVertex] = true;
 
-        WeightedNode* temp = adjList->adj[fromVertex].head;
-        while (temp)
+        WeightedNode* toNode = adjList->adj[fromVertex].head;
+        while (toNode)
         {
-            int toVertex = temp->vertex;
-            if (!visited[toVertex] && dist[fromVertex] != INF && dist[fromVertex] + temp->weight < dist[toVertex])
+            int toVertex = toNode->vertex;
+            if (!visited[toVertex] && dist[fromVertex] != INFPOS && dist[fromVertex] + toNode->weight < dist[toVertex])
             {
-                dist[toVertex] = dist[fromVertex] + temp->weight;
-                heap->insert(toVertex, dist[toVertex]);
+                dist[toVertex] = dist[fromVertex] + toNode->weight;
+                parent[toVertex] = fromVertex;
+                heap->insertOrUpdate(toVertex, dist[toVertex]);
             }
-            temp = temp->next;
+            toNode = toNode->next;
+        }
+    }
+    delete[] heap;
+    delete[] visited;
+}
+
+Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
+{
+    int numVertices = adjList->V;
+    int* maxDist = new int[numVertices];
+    for (int i = 0; i < numVertices; i++) { maxDist[i] = INFPOS; }
+
+    Node* temp = L->head;
+    while (temp)
+    {
+        int* dist = new int[numVertices];
+        int* parent = new int[numVertices];
+        Djisktra(adjList, temp->vertex, dist, parent);
+
+        for (int i = 0; i < numVertices; i++)
+        {
+            if (dist[i] < INFPOS && dist[i] > maxDist[i])
+            {
+                maxDist[i] = dist[i];
+            }
+        }
+
+        delete[] dist;
+        delete[] parent;
+        temp = temp->next;
+    }
+
+    Vertex minimaxVertex = -1;
+    int minimaxValue = INFPOS;
+    for (int i = 0; i < numVertices; i++)
+    {
+        if (maxDist[i] < minimaxValue)
+        {
+            minimaxValue = maxDist[i];
+            minimaxVertex = i;
         }
     }
 
-    delete[] heap;
-    delete[] visited;
-
-    return dist;
+    delete[] maxDist;
+    return minimaxVertex;
 }
 
 int main()
