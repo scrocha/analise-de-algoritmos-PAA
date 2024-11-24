@@ -1,9 +1,11 @@
-#include <iostream>
 #include "structs.hpp"
+#include <iostream>
 #include <stack>
+#include <vector>
+#include <queue>
+#include <limits>
 
 using namespace std;
-
 
 int descendentCount(AdjList* adjList, int vertex, List* L2)
 {
@@ -246,6 +248,92 @@ List* computeL2_c(AdjList* adjList, List* L1) {
 
     return L2;
 }
+
+List* bfs(AdjList* adjList, Vertex start, Vertex end)
+{
+    List* path = new List();
+
+    if (start == end || start < 0 || end < 0 || start >= adjList->V || end >= adjList->V) { return nullptr; }
+
+    bool* visited = new bool[adjList->V];
+    int* parent = new int[adjList->V];
+
+    for (int i = 0; i < adjList->V; i++)
+    {
+        visited[i] = false;
+        parent[i] = -1;
+    }
+
+    queue<Vertex> queue;
+    queue.push(start);
+    visited[start] = true;
+
+    bool hasEnded = false;
+    while (!queue.empty())
+    {
+        Vertex currentVertex = queue.front();
+        queue.pop();
+
+        Node* temp = adjList->adj[currentVertex].head;
+        while (temp)
+        {
+            if (!visited[temp->vertex])
+            {
+                queue.push(temp->vertex);
+                visited[temp->vertex] = true;
+                parent[temp->vertex] = currentVertex;
+
+                if (temp->vertex == end)
+                {
+                    hasEnded = true;
+                    break;
+                }
+            }
+            temp = temp->next;
+        }
+        if (hasEnded) { break; }
+    }
+
+    if (!visited[end] || !hasEnded) { return nullptr; }
+
+    for (Vertex at = end; at != -1; at = parent[at]) { path->add(at); }
+
+    delete[] visited;
+    delete[] parent;
+
+    return path;
+}
+
+List* computePath(AdjList* adjList, Vertex start, Vertex end, List* L)
+{
+    List* path = new List();
+    Node* current = L->head;
+
+    if (start == end || start < 0 || end < 0 || start >= adjList->V || end >= adjList->V || current == nullptr) { return path; }
+
+    Node* next = current->next;
+
+    while (next)
+    {
+        if (current->vertex == next->vertex) { continue; }
+
+        List* temp = bfs(adjList, current->vertex, next->vertex);
+        if (temp == nullptr) { return path; }
+
+        Node* tempNode = temp->head;
+        while (tempNode)
+        {
+            path->add(tempNode->vertex);
+            tempNode = tempNode->next;
+        }
+        current = next;
+        next = next->next;
+    }
+    
+    return path;
+}
+
+
 
 
 int main()
