@@ -298,7 +298,7 @@ struct MinHeap
         *a = *b;
         *b = t;
     }
-
+    // O(log(n))
     void minHeapify(int idx)
     {
         int smallest = idx;
@@ -329,7 +329,7 @@ struct MinHeap
     {
         return size == 0;
     }
-
+    // O(log(n))
     MinHeapNode* extractMin()
     {
         if (isEmpty()) { return nullptr; }
@@ -347,7 +347,7 @@ struct MinHeap
 
         return root;
     }
-
+    // O(log(n))
     void decreaseKey(Vertex v, int dist)
     {
         int i = pos[v];
@@ -362,7 +362,7 @@ struct MinHeap
             i = (i - 1) / 2;
         }
     }
-
+    // O(log(n))
     void insert(Vertex v, int dist)
     {
         if (size == capacity) { return; }
@@ -374,7 +374,7 @@ struct MinHeap
 
         decreaseKey(v, dist);
     }
-
+    // O(log(n))
     void insertOrUpdate(Vertex v, int dist)
     {
         if (pos[v] == -1) { insert(v, dist); }
