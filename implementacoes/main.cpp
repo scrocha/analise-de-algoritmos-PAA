@@ -3,9 +3,11 @@
 #include <stack>
 #include <vector>
 #include <queue>
-#include <limits>
+#include <climits>
 
 using namespace std;
+
+#define INF INT_MAX
 
 int descendentCount(AdjList* adjList, int vertex, List* L2)
 {
@@ -251,10 +253,9 @@ List* computeL2_c(AdjList* adjList, List* L1) {
 
 List* bfs(AdjList* adjList, Vertex start, Vertex end)
 {
-    List* path = new List();
-
     if (start == end || start < 0 || end < 0 || start >= adjList->V || end >= adjList->V) { return nullptr; }
 
+    List* path = new List();
     bool* visited = new bool[adjList->V];
     int* parent = new int[adjList->V];
 
@@ -334,7 +335,46 @@ List* computePath(AdjList* adjList, Vertex start, Vertex end, List* L)
 }
 
 
+int* Djisktra(WeightedAdjList* adjList, Vertex start)
+{
+    if (start < 0 || start >= adjList->V) { return nullptr; }
+    
+    int* dist = new int[adjList->V];
+    bool* visited = new bool[adjList->V];
+    for (int i = 0; i < adjList->V; i++)
+    {
+        dist[i] = INF;
+        visited[i] = false;
+    }
+    dist[start] = 0;
 
+    MinHeap* heap = new MinHeap(adjList->V);
+    heap->insert(start, 0);
+
+    while (!heap->isEmpty())
+    {
+        MinHeapNode* minHeapNode = heap->extractMin();
+        int fromVertex = minHeapNode->v;
+        visited[fromVertex] = true;
+
+        WeightedNode* temp = adjList->adj[fromVertex].head;
+        while (temp)
+        {
+            int toVertex = temp->vertex;
+            if (!visited[toVertex] && dist[fromVertex] != INF && dist[fromVertex] + temp->weight < dist[toVertex])
+            {
+                dist[toVertex] = dist[fromVertex] + temp->weight;
+                heap->insert(toVertex, dist[toVertex]);
+            }
+            temp = temp->next;
+        }
+    }
+
+    delete[] heap;
+    delete[] visited;
+
+    return dist;
+}
 
 int main()
 {

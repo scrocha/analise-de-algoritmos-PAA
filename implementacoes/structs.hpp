@@ -6,6 +6,7 @@
 using namespace std;
 
 #define Vertex int
+
 struct Node
 {
     Vertex vertex;
@@ -260,6 +261,118 @@ struct WeightedAdjList
         adj[v].remove(w);
         adj[w].remove(v);
         E -= 2;
+    }
+};
+
+struct MinHeapNode
+{
+    Vertex v;
+    int dist;
+
+    MinHeapNode(Vertex v, int dist) : v(v), dist(dist) {}
+};
+
+struct MinHeap
+{
+    MinHeapNode** array;
+    int* pos;
+    int size;
+    int capacity;
+
+    MinHeap(int capacity) : size(0), capacity(capacity)
+    {
+        array = new MinHeapNode*[capacity];
+        pos = new int[capacity];
+    }
+
+    ~MinHeap()
+    {
+        delete[] array;
+        delete[] pos;
+    }
+
+    void swapMinHeapNode(MinHeapNode** a, MinHeapNode** b)
+    {
+        MinHeapNode* t = *a;
+        *a = *b;
+        *b = t;
+    }
+
+    void minHeapify(int idx)
+    {
+        int smallest = idx;
+        int left = 2 * idx + 1;
+        int right = 2 * idx + 2;
+
+        if (left < size && array[left]->dist < array[smallest]->dist)
+            smallest = left;
+
+        if (right < size && array[right]->dist < array[smallest]->dist)
+            smallest = right;
+
+        if (smallest != idx)
+        {
+            MinHeapNode* smallestNode = array[smallest];
+            MinHeapNode* idxNode = array[idx];
+
+            pos[smallestNode->v] = idx;
+            pos[idxNode->v] = smallest;
+
+            swapMinHeapNode(&array[smallest], &array[idx]);
+
+            minHeapify(smallest);
+        }
+    }
+
+    bool isEmpty() const
+    {
+        return size == 0;
+    }
+
+    MinHeapNode* extractMin()
+    {
+        if (isEmpty()) { return nullptr; }
+
+        MinHeapNode* root = array[0];
+
+        MinHeapNode* lastNode = array[size - 1];
+        array[0] = lastNode;
+
+        pos[root->v] = size - 1;
+        pos[lastNode->v] = 0;
+
+        --size;
+        minHeapify(0);
+
+        return root;
+    }
+
+    void decreaseKey(Vertex v, int dist)
+    {
+        int i = pos[v];
+        array[i]->dist = dist;
+
+        while (i && array[i]->dist < array[(i - 1) / 2]->dist)
+        {
+            pos[array[i]->v] = (i - 1) / 2;
+            pos[array[(i - 1) / 2]->v] = i;
+            swapMinHeapNode(&array[i], &array[(i - 1) / 2]);
+
+            i = (i - 1) / 2;
+        }
+    }
+
+    void insert(Vertex v, int dist)
+    {
+        if (size == capacity) { return; }
+
+        MinHeapNode* node = new MinHeapNode(v, dist);
+        array[size] = node;
+
+        pos[v] = size;
+        ++size;
+
+        decreaseKey(v, dist);
     }
 };
 
