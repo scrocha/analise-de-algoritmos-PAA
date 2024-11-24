@@ -275,22 +275,22 @@ List* bfs(AdjList* adjList, Vertex start, Vertex end)
         Vertex currentVertex = queue.front();
         queue.pop();
 
-        Node* temp = adjList->adj[currentVertex].head;
-        while (temp)
+        Node* adjNode = adjList->adj[currentVertex].head;
+        while (adjNode)
         {
-            if (!visited[temp->vertex])
+            if (!visited[adjNode->vertex])
             {
-                queue.push(temp->vertex);
-                visited[temp->vertex] = true;
-                parent[temp->vertex] = currentVertex;
+                queue.push(adjNode->vertex);
+                visited[adjNode->vertex] = true;
+                parent[adjNode->vertex] = currentVertex;
 
-                if (temp->vertex == end)
+                if (adjNode->vertex == end)
                 {
                     hasEnded = true;
                     break;
                 }
             }
-            temp = temp->next;
+            adjNode = adjNode->next;
         }
         if (hasEnded) { break; }
     }
@@ -380,12 +380,12 @@ Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
     int* maxDist = new int[numVertices];
     for (int i = 0; i < numVertices; i++) { maxDist[i] = INFPOS; }
 
-    Node* temp = L->head;
-    while (temp)
+    Node* currentNode = L->head;
+    while (currentNode)
     {
         int* dist = new int[numVertices];
         int* parent = new int[numVertices];
-        Djisktra(adjList, temp->vertex, dist, parent);
+        Djisktra(adjList, currentNode->vertex, dist, parent);
 
         for (int i = 0; i < numVertices; i++)
         {
@@ -397,7 +397,7 @@ Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
 
         delete[] dist;
         delete[] parent;
-        temp = temp->next;
+        currentNode = currentNode->next;
     }
 
     Vertex minimaxVertex = -1;
@@ -424,13 +424,13 @@ List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
     bool* inSubgraph = new bool[numVertices];
     for (int i = 0; i < numVertices; i++) { inSubgraph[i] = false; }
 
-    Node* temp = C->head;
-    int start = temp->vertex;
-    while (temp)
+    Node* currentNode = C->head;
+    int start = currentNode->vertex;
+    while (currentNode)
     {
         int* dist = new int[numVertices];
         int* parent = new int[numVertices];
-        Djisktra(adjList, temp->vertex, dist, parent);
+        Djisktra(adjList, currentNode->vertex, dist, parent);
 
         for (int i = 0; i < numVertices; i++)
         {
@@ -442,9 +442,9 @@ List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
         delete[] dist;
         delete[] parent;
 
-        temp = temp->next;
+        currentNode = currentNode->next;
     }
-    int end = temp->vertex;
+    int end = currentNode->vertex;
 
     WeightedAdjList* subgraph = new WeightedAdjList(numVertices);
 
@@ -452,14 +452,14 @@ List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
     {
         if (inSubgraph[i])
         {
-            WeightedNode* temp = adjList->adj[i].head;
-            while (temp)
+            WeightedNode* adjNode = adjList->adj[i].head;
+            while (adjNode)
             {
-                if (inSubgraph[temp->vertex])
+                if (inSubgraph[adjNode->vertex])
                 {
-                    subgraph->adj[i].add(temp->vertex, temp->weight);
+                    subgraph->adj[i].add(adjNode->vertex, adjNode->weight);
                 }
-                temp = temp->next;
+                adjNode = adjNode->next;
             }
         }
     }
@@ -538,6 +538,43 @@ int computeMSTCost(WeightedAdjList* adjList)
     delete[] parent;
 
     return mstCost;
+}
+
+pair<Vertex, Vertex> findCriticalEdge(WeightedAdjList* adjList)
+{
+    int numVertices = adjList->V;
+    int maxIncrease = 0;
+    pair<Vertex, Vertex> criticalEdge = {-1, -1};
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        WeightedNode* adjNode = adjList->adj[i].head;
+        while (adjNode)
+        {
+            int currentVertex = i;
+            int adjVertex = adjNode->vertex;
+            int weight = adjNode->weight;
+
+            adjList->removeEdge(currentVertex, adjVertex);
+            adjList->removeEdge(adjVertex, currentVertex);
+
+            int newMSTCost = computeMSTCost(adjList);
+
+            adjList->addEdge(currentVertex, adjVertex, weight);
+            adjList->addEdge(adjVertex, currentVertex, weight);
+
+            int increase = newMSTCost - computeMSTCost(adjList);
+            if (increase > maxIncrease)
+            {
+                maxIncrease = increase;
+                criticalEdge = {currentVertex, adjVertex};
+            }
+
+            adjNode = adjNode->next;
+        }
+    }
+
+    return criticalEdge;
 }
 
 int main()
