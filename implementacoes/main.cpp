@@ -476,6 +476,70 @@ List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
     return path;
 }
 
+void MST(WeightedAdjList* adjList, int* parent, int* key, Vertex start = 0)
+{
+    int numVertices = adjList->V;
+    bool* inMST = new bool[numVertices];
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        key[i] = INFPOS;
+        inMST[i] = false;
+        parent[i] = -1;
+    }
+
+    key[start] = 0;
+    MinHeap* heap = new MinHeap(numVertices);
+    heap->insert(start, 0);
+
+    while (!heap->isEmpty())
+    {
+        MinHeapNode* currentNode = heap->extractMin();
+        int currentVertex = currentNode->v;
+        inMST[currentVertex] = true;
+
+        WeightedNode* adjNode = adjList->adj[currentVertex].head;
+        while (adjNode)
+        {
+            int adjVertex = adjNode->vertex;
+            int weight = adjNode->weight;
+
+            if (!inMST[adjVertex] && key[adjVertex] > weight)
+            {
+                key[adjVertex] = weight;
+                heap->insertOrUpdate(adjVertex, key[adjVertex]);
+                parent[adjVertex] = currentVertex;
+            }
+            adjNode = adjNode->next;
+        }
+    }
+
+    delete[] inMST;
+    delete[] heap;
+}
+
+int computeMSTCost(WeightedAdjList* adjList)
+{
+    int numVertices = adjList->V;
+    int* parent = new int[numVertices];
+    int* key = new int[numVertices];
+
+    MST(adjList, parent, key);
+
+    int mstCost = 0;
+    for (int i = 0; i < numVertices; i++)
+    {
+        if (parent[i] != -1)
+        {
+            mstCost += key[i];
+        }
+    }
+    delete[] key;
+    delete[] parent;
+
+    return mstCost;
+}
+
 int main()
 {
 
