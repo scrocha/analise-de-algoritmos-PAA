@@ -415,6 +415,67 @@ Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
     return minimaxVertex;
 }
 
+List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
+{
+    if (C->head == nullptr) { return nullptr; }
+
+    int numVertices = adjList->V;
+
+    bool* inSubgraph = new bool[numVertices];
+    for (int i = 0; i < numVertices; i++) { inSubgraph[i] = false; }
+
+    Node* temp = C->head;
+    int start = temp->vertex;
+    while (temp)
+    {
+        int* dist = new int[numVertices];
+        int* parent = new int[numVertices];
+        Djisktra(adjList, temp->vertex, dist, parent);
+
+        for (int i = 0; i < numVertices; i++)
+        {
+            if (dist[i] <= X)
+            {
+                inSubgraph[i] = true;
+            }
+        }
+        delete[] dist;
+        delete[] parent;
+
+        temp = temp->next;
+    }
+    int end = temp->vertex;
+
+    WeightedAdjList* subgraph = new WeightedAdjList(numVertices);
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        if (inSubgraph[i])
+        {
+            WeightedNode* temp = adjList->adj[i].head;
+            while (temp)
+            {
+                if (inSubgraph[temp->vertex])
+                {
+                    subgraph->adj[i].add(temp->vertex, temp->weight);
+                }
+                temp = temp->next;
+            }
+        }
+    }
+    delete[] inSubgraph;
+
+    int* dist = new int[numVertices];
+    int* parent = new int[numVertices];
+    Djisktra(subgraph, start, dist, parent);
+
+    List* path = new List();
+    for (int at = end; at != -1 || at != start; at = parent[at]) { path->add(at); }
+    path->add(start);
+
+    return path;
+}
+
 int main()
 {
 
