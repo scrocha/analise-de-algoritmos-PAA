@@ -264,6 +264,45 @@ struct WeightedAdjList
     }
 };
 
+struct QueueNode
+{
+    Vertex vertex;
+    QueueNode* next;
+
+    QueueNode(Vertex vertex) : vertex(vertex), next(nullptr) {}
+
+    ~QueueNode() { delete next; }
+    // O(n)
+    void push(Vertex vertex)
+    {
+        if (next == nullptr) { next = new QueueNode(vertex); }
+        else { next->push(vertex); }
+    }
+    // O(1)
+    bool empty() const { return next == nullptr; }
+    // O(1)
+    Vertex pop()
+    {
+        Vertex vertex = next->vertex;
+
+        QueueNode* temp = next;
+        next = next->next;
+        temp->next = nullptr;
+        delete temp;
+
+        return vertex;
+    }
+    // O(1)
+    Vertex front() const { return next->vertex; }
+    // O(n)
+    Vertex back() const
+    {
+        QueueNode* current = next;
+        while (current->next != nullptr) { current = current->next; }
+        return current->vertex;
+    }
+};
+
 struct MinHeapNode
 {
     Vertex v;
@@ -291,7 +330,7 @@ struct MinHeap
         delete[] array;
         delete[] pos;
     }
-
+    // O(1)
     void swapMinHeapNode(MinHeapNode** a, MinHeapNode** b)
     {
         MinHeapNode* t = *a;
@@ -324,7 +363,7 @@ struct MinHeap
             minHeapify(smallest);
         }
     }
-
+    // O(1)
     bool isEmpty() const
     {
         return size == 0;
