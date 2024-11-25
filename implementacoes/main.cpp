@@ -1,7 +1,5 @@
 #include "structs.hpp"
 #include <iostream>
-#include <vector>
-#include <queue>
 #include <climits>
 
 using namespace std;
@@ -16,21 +14,19 @@ void canReach(AdjList* adjList, Vertex start, bool* visited)
     // O(V)
     for (int i = 0; i < numVertices; i++) { visited[i] = false; }
 
-    queue<Vertex> queue;
-    queue.push(start);
+    QueueNode* queue = new QueueNode(start);
     visited[start] = true;
     // O(V + E)
-    while (!queue.empty())
+    while (!queue->empty())
     {
-        Vertex currentVertex = queue.front();
-        queue.pop();
+        Vertex currentVertex = queue->pop();
 
         Node* adjNode = adjList->adj[currentVertex].head;
         while (adjNode)
         {
             if (!visited[adjNode->vertex])
             {
-                queue.push(adjNode->vertex);
+                queue->push(adjNode->vertex);
                 visited[adjNode->vertex] = true;
             }
             adjNode = adjNode->next;
@@ -321,24 +317,22 @@ List* bfs(AdjList* adjList, Vertex start, Vertex end)
         parent[i] = -1;
     }
 
-    queue<Vertex> queue;
-    queue.push(start);
+    QueueNode* queue = new QueueNode(start);
     visited[start] = true;
 
     bool hasEnded = false;
     // O(V + E)
-    while (!queue.empty())
+    while (!queue->empty())
     {
         // O(1)
-        Vertex currentVertex = queue.front();
-        queue.pop();
+        Vertex currentVertex = queue->pop();
 
         Node* adjNode = adjList->adj[currentVertex].head;
         while (adjNode)
         {
             if (!visited[adjNode->vertex])
             {
-                queue.push(adjNode->vertex);
+                queue->push(adjNode->vertex);
                 visited[adjNode->vertex] = true;
                 parent[adjNode->vertex] = currentVertex;
 
