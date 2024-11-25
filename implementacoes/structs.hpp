@@ -421,4 +421,44 @@ struct MinHeap
     }
 };
 
+struct QueueNode
+{
+    Vertex vertex;
+    QueueNode* next;
+
+    QueueNode(Vertex vertex) : vertex(vertex), next(nullptr) {}
+
+    ~QueueNode() { delete next; }
+
+    void push(Vertex vertex)
+    {
+        if (next == nullptr) { next = new QueueNode(vertex); }
+        else { next->push(vertex); }
+    }
+
+    bool empty() const { return next == nullptr; }
+
+    Vertex pop()
+    {
+        Vertex vertex = next->vertex;
+
+        QueueNode* temp = next;
+        next = next->next;
+        temp->next = nullptr;
+        delete temp;
+
+        return vertex;
+    }
+
+    Vertex front() const { return next->vertex; }
+
+    Vertex back() const
+    {
+        QueueNode* current = next;
+        while (current->next != nullptr) { current = current->next; }
+        return current->vertex;
+    }
+};
+
+
 #endif
