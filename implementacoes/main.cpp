@@ -32,6 +32,7 @@ void canReach(AdjList* adjList, Vertex start, bool* visited)
             adjNode = adjNode->next;
         }
     }
+    delete[] queue;
 }
 
 // O(V + E)
@@ -49,6 +50,7 @@ int descendentCount(AdjList* adjList, Vertex vertex, List* L2)
     {
         if (descendents[i] && L2->contains(i)) { count++; }
     }
+    delete[] descendents;
     return count;
 }
 
@@ -80,6 +82,7 @@ void dfsDescendants(AdjList* adjList, List* L2, bool* inL2)
         }
         if (!addedVertexL2) { break; }
     }
+    delete[] noDescendents;
 }
 
 // Questão 1 a
@@ -102,6 +105,7 @@ List* computeL2_a(AdjList* adjList, List* L1)
 
     // O(V * (V + E))
     dfsDescendants(adjList, L2, inL2);
+    delete[] inL2;
 
     return L2;
 }
@@ -125,6 +129,7 @@ void ancestorCount(AdjList* adjList, List* L2, int* count)
         {
             if (visited[i]) { count[i]++; }
         }
+        delete[] visited;
     }
 }
 
@@ -158,6 +163,7 @@ void dfsAncestors(AdjList* adjList, List* L2, bool* inL2)
         delete[] count;
         if (!addedVertexL2) { break; }
     }
+    delete[] noAncestors;
 }
 
 // Questão 1 b
@@ -180,6 +186,7 @@ List* computeL2_b(AdjList* adjList, List* L1)
     }
     // O(V^2 * (V + E))
     dfsAncestors(adjList, L2, inL2);
+    delete[] inL2;
 
     return L2;
 }
@@ -349,10 +356,12 @@ List* bfs(AdjList* adjList, Vertex start, Vertex end)
 
     if (!visited[end] || !hasEnded) { return nullptr; }
     // O(V)
-    for (Vertex at = end; at != -1; at = parent[at]) { path->add(at); }
+    for (Vertex at = end; at != -1 || at != start ; at = parent[at]) { path->add(at); }
+    path->add(start);
 
     delete[] visited;
     delete[] parent;
+    delete[] queue;
 
     return path;
 }
@@ -367,7 +376,7 @@ List* computePath(AdjList* adjList, Vertex start, Vertex end, List* L)
     if (start == end || start < 0 || end < 0 || start >= adjList->V || end >= adjList->V || currentNode == nullptr) { return path; }
 
     Node* nextNode = currentNode->next;
-
+    path->add(start);
     // O((V + E) * V)
     while (nextNode)
     {
@@ -378,7 +387,7 @@ List* computePath(AdjList* adjList, Vertex start, Vertex end, List* L)
         if (temp == nullptr) { return path; }
 
         // O(V)
-        Node* tempNode = temp->head;
+        Node* tempNode = temp->head->next;
         while (tempNode)
         {
             path->add(tempNode->vertex);
@@ -422,7 +431,7 @@ void Dijkstra(WeightedAdjList* adjList, Vertex start, int *distance, Vertex *par
     if (start < 0 || start >= adjList->V) { return; }
 
     int numVertices = adjList->V;
-    bool checked[numVertices];
+    bool* checked = new bool[numVertices];
     initializations(parent, distance, checked, numVertices);
     parent[start] = start;
     distance[start] = 0;
@@ -432,6 +441,7 @@ void Dijkstra(WeightedAdjList* adjList, Vertex start, int *distance, Vertex *par
     {
         int minDistance = INT_MAX;
         Vertex currentVertex = -1;
+        // O(V)
         seekLowest(distance, checked, minDistance, currentVertex, numVertices);
         if (minDistance == INT_MAX) { break; }
 
@@ -501,11 +511,24 @@ void heapDijsktra(WeightedAdjList* adjList, Vertex start, int* dist, Vertex* par
 Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
 {
     int numVertices = adjList->V;
+
     int* maxDist = new int[numVertices];
-    for (int i = 0; i < numVertices; i++) { maxDist[i] = INFPOS; }
+    bool* inList = new bool[numVertices];
+    for (int i = 0; i < numVertices; i++)
+    {
+        maxDist[i] = INFPOS;
+        inList[i] = false;
+    }
+
+    Node* tempNode = L->head;
+    while (tempNode)
+    {
+        inList[tempNode->vertex] = true;
+        tempNode = tempNode->next;
+    }
 
     Node* currentNode = L->head;
-    // O(V)
+    // O(V * V^2)
     while (currentNode)
     {
         int* dist = new int[numVertices];
@@ -515,10 +538,8 @@ Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
         // O(V)
         for (int i = 0; i < numVertices; i++)
         {
-            if (dist[i] < INFPOS && dist[i] > maxDist[i])
-            {
-                maxDist[i] = dist[i];
-            }
+            if (inList[i] || dist[i] >= INFPOS) { continue; }
+            else if (dist[i] < maxDist[i]) { maxDist[i] = dist[i]; }
         }
 
         delete[] dist;
@@ -531,13 +552,14 @@ Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
     // O(V)
     for (int i = 0; i < numVertices; i++)
     {
-        if (maxDist[i] < minimaxValue)
+        if (!inList[i] && maxDist[i] < minimaxValue)
         {
             minimaxValue = maxDist[i];
             minimaxVertex = i;
         }
     }
     delete[] maxDist;
+    delete[] inList;
 
     return minimaxVertex;
 }
@@ -605,6 +627,10 @@ List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
     for (int at = end; at != -1 || at != start; at = parent[at]) { path->add(at); }
     path->add(start);
 
+    delete[] dist;
+    delete[] parent;
+    delete[] subgraph;
+
     return path;
 }
 
@@ -644,72 +670,91 @@ void MST(WeightedAdjList* adjList, int* parent, int* key, Vertex start = 0)
             adjNode = adjNode->next;
         }
     }
-
     delete[] inMST;
     delete[] heap;
 }
 
-// O((V + E) * log(V))
-int computeMSTCost(WeightedAdjList* adjList)
+// O(V + E)
+pair<pair<Vertex, Vertex>, int> findMinEdge(WeightedAdjList* adjList, AdjList* mst, Vertex start, Vertex end)
 {
     int numVertices = adjList->V;
-    int* parent = new int[numVertices];
-    int* key = new int[numVertices];
-    // O((V + E) * log(V))
-    MST(adjList, parent, key);
+    int minWeight = INFPOS;
+    Vertex minEdge1 = -1;
+    Vertex minEdge2 = -1;
 
-    int mstCost = 0;
     // O(V)
+    mst->removeEdgeDual(start, end);
+    bool* component1 = new bool[numVertices];
+    // O(V + E)
+    canReach(mst, start, component1);
+    mst->addEdgeDual(start, end);
+
+    // O(V + E)
     for (int i = 0; i < numVertices; i++)
     {
-        if (parent[i] != -1)
+        if (component1[i])
         {
-            mstCost += key[i];
+            WeightedNode* adjNode = adjList->adj[i].head;
+            while (adjNode)
+            {
+                if (!component1[adjNode->vertex] && adjNode->weight < minWeight)
+                {
+                    minWeight = adjNode->weight;
+                    minEdge1 = i;
+                    minEdge2 = adjNode->vertex;
+                }
+                adjNode = adjNode->next;
+            }
         }
     }
-    delete[] key;
-    delete[] parent;
+    delete[] component1;
 
-    return mstCost;
+    pair<pair<Vertex, Vertex>, int> minEdgePair = {{minEdge1, minEdge2}, minWeight};
+
+    return minEdgePair;
 }
 
 // Questão 5
-// O(E * (V + E) * log(V))
+// O((V + E) * (log(V) + V))
 pair<Vertex, Vertex> findCriticalEdge(WeightedAdjList* adjList)
 {
     int numVertices = adjList->V;
     int maxIncrease = 0;
     pair<Vertex, Vertex> criticalEdge = {-1, -1};
 
-    // O(E * (V + E) * log(V))
+    int* parent = new int[numVertices];
+    int* key = new int[numVertices];
+    // O((V + E) * log(V))
+    MST(adjList, parent, key);
+    
+    AdjList* mst = new AdjList(numVertices);
+    // O(V)
     for (int i = 0; i < numVertices; i++)
     {
-        WeightedNode* adjNode = adjList->adj[i].head;
-        while (adjNode)
+        if (parent[i] != -1) {  mst->addEdgeDual(i, parent[i]); }
+    }
+    // O(V * (V + E))
+    for (int i = 0; i < numVertices; i++)
+    {
+        if (parent[i] == -1) { continue; }
+        int originalWeight = key[i];
+
+        adjList->removeEdgeDual(i, parent[i]);
+        // O(V + E)
+        pair<pair<Vertex, Vertex>, int> newMinEdge = findMinEdge(adjList, mst, i, parent[i]);
+
+        adjList->addEdgeDual(i, parent[i], originalWeight);
+
+        int increase = newMinEdge.second; - originalWeight;
+        if (increase > maxIncrease)
         {
-            int currentVertex = i;
-            int adjVertex = adjNode->vertex;
-            int weight = adjNode->weight;
-
-            adjList->removeEdge(currentVertex, adjVertex);
-            adjList->removeEdge(adjVertex, currentVertex);
-            
-            // O((V + E) * log(V))
-            int newMSTCost = computeMSTCost(adjList);
-
-            adjList->addEdge(currentVertex, adjVertex, weight);
-            adjList->addEdge(adjVertex, currentVertex, weight);
-
-            // O((V + E) * log(V))
-            int increase = newMSTCost - computeMSTCost(adjList);
-            if (increase > maxIncrease)
-            {
-                maxIncrease = increase;
-                criticalEdge = {currentVertex, adjVertex};
-            }
-            adjNode = adjNode->next;
+            maxIncrease = increase;
+            criticalEdge = {i, parent[i]};
         }
     }
+    delete[] mst;
+    delete[] parent;
+    delete[] key;
 
     return criticalEdge;
 }
