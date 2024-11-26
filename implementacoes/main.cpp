@@ -521,153 +521,164 @@ void heapDijsktra(WeightedAdjList* adjList, Vertex start, int* dist, Vertex* par
     delete[] visited;
 }
 
+// O(V^2)
+void DijkstraMultiSource(WeightedAdjList* adjList, List* L, int *distance, Vertex *parent)
+{
+    int numVertices = adjList->V;
+    bool* checked = new bool[numVertices];
+    initializations(parent, distance, checked, numVertices);
+    
+    Node* current = L->head;
+    while (current)
+    {
+        distance[current->vertex] = 0;
+        parent[current->vertex] = current->vertex;
+
+        current = current->next;
+    }
+
+    // O(V * V)
+    while (true)
+    {
+        int minDistance = INT_MAX;
+        Vertex currentVertex = -1;
+        // O(V)
+        seekLowest(distance, checked, minDistance, currentVertex, numVertices);
+        if (minDistance == INT_MAX) { break; }
+
+        WeightedNode* adjNode = adjList->adj[currentVertex].head;
+        // O(V)
+        while (adjNode)
+        {
+            Vertex adjVertex = adjNode->vertex;
+
+            if (!checked[adjVertex])
+            {
+                int cost = adjNode->weight;
+                if (distance[currentVertex] + cost < distance[adjVertex])
+                {
+                    parent[adjVertex] = currentVertex;
+                    distance[adjVertex] = distance[currentVertex] + cost;
+                }
+            }
+            adjNode = adjNode->next;
+        }
+        checked[currentVertex] = true;
+    }
+    delete[] checked;
+}
+
+// O((V + E) * log(V))
+void heapDijsktraMultiSource(WeightedAdjList* adjList, List* L, int* dist, Vertex* parent, Vertex& endVertex)
+{
+    int numVertices = adjList->V;
+    bool* visited = new bool[numVertices];
+    initializations(parent, dist, visited, numVertices);
+    
+    MinHeap* heap = new MinHeap(numVertices);
+    Node* current = L->head;
+    // O(V)
+    while (current)
+    {
+        dist[current->vertex] = 0;
+        parent[current->vertex] = current->vertex;
+        heap->insert(current->vertex, 0);
+        current = current->next;
+    }
+    endVertex = current->vertex;
+
+    // O((V + E) * log(V))
+    while (!heap->isEmpty())
+    {
+        MinHeapNode* fromNode = heap->extractMin();
+        int fromVertex = fromNode->v;
+        if (dist[fromVertex] == INFPOS) { break; }
+        visited[fromVertex] = true;
+
+        WeightedNode* toNode = adjList->adj[fromVertex].head;
+        while (toNode)
+        {
+            int toVertex = toNode->vertex;
+            if (!visited[toVertex] && dist[fromVertex] != INFPOS && dist[fromVertex] + toNode->weight < dist[toVertex])
+            {
+                dist[toVertex] = dist[fromVertex] + toNode->weight;
+                parent[toVertex] = fromVertex;
+                // O(log(V))
+                heap->insertOrUpdate(toVertex, dist[toVertex]);
+            }
+            toNode = toNode->next;
+        }
+    }
+    delete[] heap;
+    delete[] visited;
+}
+
 // Questão 3
-// O(V^3)
+// O((V + E) * log(V))
 Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
 {
     int numVertices = adjList->V;
-
-    int* maxDist = new int[numVertices];
-    bool* inList = new bool[numVertices];
-    for (int i = 0; i < numVertices; i++)
-    {
-        maxDist[i] = INFPOS;
-        inList[i] = false;
-    }
-
-    Node* tempNode = L->head;
-    while (tempNode)
-    {
-        inList[tempNode->vertex] = true;
-        tempNode = tempNode->next;
-    }
-
-    Node* currentNode = L->head;
-    // O(V * V^2)
-    while (currentNode)
-    {
-        int* dist = new int[numVertices];
-        int* parent = new int[numVertices];
-        // O(V^2)
-        Dijkstra(adjList, currentNode->vertex, dist, parent);
-        // O(V)
-        for (int i = 0; i < numVertices; i++)
-        {
-            if (inList[i] || dist[i] >= INFPOS) { continue; }
-            else if (dist[i] < maxDist[i]) { maxDist[i] = dist[i]; }
-        }
-
-        delete[] dist;
-        delete[] parent;
-        currentNode = currentNode->next;
-    }
+    int* dist = new int[numVertices];
+    Vertex* parent = new Vertex[numVertices];
+    int endVertex = -1;
+    // O((V + E) * log(V))
+    heapDijsktraMultiSource(adjList, L, dist, parent, endVertex);
 
     Vertex minimaxVertex = -1;
     int minimaxValue = INFPOS;
     // O(V)
     for (int i = 0; i < numVertices; i++)
     {
-        if (!inList[i] && minimaxValue < maxDist[i])
+        if (dist[i] < minimaxValue)
         {
-            minimaxValue = maxDist[i];
+            minimaxValue = dist[i];
             minimaxVertex = i;
         }
     }
-    delete[] maxDist;
-    delete[] inList;
+    delete[] dist;
+    delete[] parent;
 
     return minimaxVertex;
 }
 
 // Questão 4
-// O(V^3)
-void findValidVertex(WeightedAdjList* adjList, List* C, int X, bool* valids, bool* inC)
-{
-    int numVertices = adjList->V;
-    // O(V^3)
-    for (int i = 0; i < numVertices; i++)
-    {
-        if (inC[i] || valids[i]) { continue; }
-
-        int* dist = new int[numVertices];
-        Vertex* parent = new Vertex[numVertices];
-        // O(V^2)
-        Dijkstra(adjList, i, dist, parent);
-
-        int minDist = INFPOS;
-        Vertex nearest = -1;
-        // O(V)
-        for (int j = 0; j < numVertices; j++)
-        {
-            if (inC[j] && dist[j] < minDist) { minDist = dist[j]; Vertex nearest = j; }
-        }
-
-        if (minDist <= X)
-        {
-            valids[i] = true;
-            for (Vertex j = nearest; j != -1 || j != i; j = parent[j]) { valids[j] = true; }
-        }
-
-        delete[] dist;
-        delete[] parent;
-    }
-    delete[] inC;
-}
-// O(V^3)
+// O((V + E) * log(V))
 List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
 {
-    List* path = new List();
     int numVertices = adjList->V;
-    bool* valids = new bool[numVertices];
-    bool* inC = new bool[numVertices];
-    // O(V)
-    for (int i = 0; i < numVertices; i++) { valids[i] = false; inC[i] = false; }
-    
-    Node* temp = C->head;
-    Vertex start = temp->vertex;
-    while (temp)
-    {
-        inC[temp->vertex] = true;
-        valids[temp->vertex] = true;
-        temp = temp->next;
-    }
-    Vertex end = temp->vertex;
-    // O(V^3)
-    findValidVertex(adjList, C, X, valids, inC);
+    int* dist = new int[numVertices];
+    Vertex* parent = new Vertex[numVertices];
+    Vertex startVertex = C->head->vertex;
+    Vertex endVertex = -1;
+    // O((V + E) * log(V))
+    heapDijsktraMultiSource(adjList, C, dist, parent, endVertex);
 
-    WeightedAdjList* subgraph = new WeightedAdjList(numVertices);
+    WeightedAdjList* adjListCopy = new WeightedAdjList(numVertices);
+
     // O(V + E)
     for (int i = 0; i < numVertices; i++)
     {
-        if (!valids[i]) { continue; }
-
+        if (dist[i] > X) { continue; }
         WeightedNode* adjNode = adjList->adj[i].head;
         while (adjNode)
         {
-            if (valids[adjNode->vertex])
-            {
-                subgraph->addEdge(i, adjNode->vertex, adjNode->weight);
-            }
+            if (dist[adjNode->vertex] > X) { adjNode = adjNode->next; continue; }
+            
+            adjListCopy->addEdge(i, adjNode->vertex, adjNode->weight);
             adjNode = adjNode->next;
         }
     }
 
-    int* dist = new int[numVertices];
-    Vertex* parent = new Vertex[numVertices];
-    // O(V^2)
-    Dijkstra(subgraph, 0, dist, parent);
+    List* path = new List();
+    // O((V + E) * log(V))
+    heapDijsktra(adjListCopy, startVertex, dist, parent);
 
-    for (Vertex i = end; i != -1 || i != start; i = parent[i]) { path->add(i); }
-    path->add(start);
-
-    delete[] valids;
-    delete[] inC;
-    delete[] dist;
-    delete[] parent;
-    delete[] subgraph;
+    for (Vertex at = endVertex; at != -1 || at != startVertex; at = parent[at]) { path->add(at); }
+    path->add(startVertex);
 
     return path;
 }
+
 // O((V + E) * log(V))
 void MST(WeightedAdjList* adjList, int* parent, int* key, Vertex start = 0)
 {
