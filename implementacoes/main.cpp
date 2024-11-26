@@ -7,189 +7,179 @@ using namespace std;
 #define INFPOS INT_MAX
 
 // O(V + E)
-void canReach(AdjList* adjList, Vertex start, bool* visited)
+Vertex findRoot(AdjList* adjList, Vertex* parent)
 {
     int numVertices = adjList->V;
-    if (start < 0 || start >= numVertices) { return; }
-    // O(V)
-    for (int i = 0; i < numVertices; i++) { visited[i] = false; }
+    bool* hasParent = new bool[numVertices];
+    for (int i = 0; i < numVertices; i++) { parent[i] = -1; hasParent[i] = false; }
 
-    QueueNode* queue = new QueueNode(start);
-    visited[start] = true;
+    Vertex root = -1;
     // O(V + E)
-    while (!queue->empty())
+    for (int i = 0; i < numVertices; i++)
     {
-        Vertex currentVertex = queue->pop();
-
-        Node* adjNode = adjList->adj[currentVertex].head;
+        Node* adjNode = adjList->adj[i].head;
         while (adjNode)
         {
-            if (!visited[adjNode->vertex])
-            {
-                queue->push(adjNode->vertex);
-                visited[adjNode->vertex] = true;
-            }
+            parent[adjNode->vertex] = i;
+            hasParent[adjNode->vertex] = true;
             adjNode = adjNode->next;
         }
     }
-    delete[] queue;
-}
-
-// O(V + E)
-int descendentCount(AdjList* adjList, Vertex vertex, List* L2)
-{
-    int numVertices = adjList->V;
-    if (vertex < 0 || vertex >= numVertices) { return 0; }
-
-    int count = 0;
-    bool* descendents = new bool[numVertices];
-    // O(V + E)
-    canReach(adjList, vertex, descendents);
     // O(V)
     for (int i = 0; i < numVertices; i++)
     {
-        if (descendents[i] && L2->contains(i)) { count++; }
+        if (!hasParent[i]) { root = i; break; }
     }
-    delete[] descendents;
+    delete[] hasParent;
+
+    return root;
+}
+
+// O(V + E)
+void countDescendantsInL2(AdjList* adjList, List* L2, Vertex* parent, int* count)
+{
+    int numVertices = adjList->V;
+    int* initialCount = new int[numVertices];
+    for (int i = 0; i < numVertices; i++) { count[i] = 0; initialCount[i] = 0; }
+
+    Node* current = L2->head;
+    // O(V)
+    while (current)
+    {
+        Vertex currentVertex = current->vertex;
+        
+        initialCount[parent[currentVertex]]++;
+        current = current->next;
+    }
+
+    // O(V + E)
+    for (Vertex i = 0; i < numVertices; i++)
+    {
+        if (initialCount[i] > 0)
+        {
+            count[i] += initialCount[i];
+            for (Vertex j = i; j != -1; j = parent[j])
+            {
+                Vertex k = parent[j];
+                count[k] += count[j];
+            }
+        }
+    }
+}
+
+// O(V + E)
+List* computeL2_a(AdjList* adjList, List* L1)
+{
+    int numVertices = adjList->V;
+    List* L2 = new List();
+
+    bool* visited = new bool[numVertices];
+    bool* inL2 = new bool[numVertices];
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        visited[i] = false;
+        inL2[i] = false;
+    }
+
+    Node* current = L1->head;
+    while (current)
+    {
+        L2->add(current->vertex);
+        inL2[current->vertex] = true;
+        current = current->next;
+    }
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        for (int j = 0; j < numVertices; j++) { visited[j] = false; }
+
+        int count = countDescendantsInL2(adjList, inL2, visited, i);
+
+        if (count % 2 == 1 && !inL2[i])
+        {
+            L2->add(i);
+            inL2[i] = true;
+        }
+    }
+    delete[] visited;
+    delete[] inL2;
+    return L2;
+}
+
+// O(V + E)
+int countAncestorsInL2(AdjList* transposedAdj, bool* inL2, bool* visited, Vertex current)
+{
+    visited[current] = true;
+    int count = 0;
+
+    Node* adjNode = transposedAdj->adj[current].head;
+    while (adjNode)
+    {
+        if (!visited[adjNode->vertex])
+        {
+            count += countAncestorsInL2(transposedAdj, inL2, visited, adjNode->vertex);
+        }
+        adjNode = adjNode->next;
+    }
+    if (inL2[current]) { count++; }
+
     return count;
 }
 
-// O(V * (V + E))
-void dfsDescendants(AdjList* adjList, List* L2, bool* inL2)
-{
-    int numVertices = adjList->V;
-    bool* noDescendents = new bool[numVertices];
-    // O(V)
-    for (int i = 0; i < numVertices; i++) { noDescendents[i] = false; }
-    // O(V * (V + E))
-    while (true)
-    {
-        bool addedVertexL2 = false;
-        for (int i = 0; i < numVertices; i++)
-        {
-            if (noDescendents[i] || inL2[i]) { continue; }
-
-            // O(V + E)
-            int count = descendentCount(adjList, i, L2);
-
-            if (count == 0) { noDescendents[i] = true; }
-            else if (count % 2 == 0 && !L2->contains(i))
-            {
-                L2->add(i);
-                inL2[i] = true;
-                addedVertexL2 = true;
-            }
-        }
-        if (!addedVertexL2) { break; }
-    }
-    delete[] noDescendents;
-}
-
-// Questão 1 a
-// O(V * (V + E))
-List* computeL2_a(AdjList* adjList, List* L1)
-{
-    if (L1->head == nullptr) { return nullptr; }
-    List* L2 = new List();
-
-    bool* inL2 = new bool[adjList->V];
-    for (int i = 0; i < adjList->V; i++) { inL2[i] = false; }
-
-    Node* temp = L1->head;
-    while (temp)
-    {
-        L2->add(temp->vertex);
-        inL2[temp->vertex] = true;
-        temp = temp->next;
-    }
-
-    // O(V * (V + E))
-    dfsDescendants(adjList, L2, inL2);
-    delete[] inL2;
-
-    return L2;
-}
-
-// O(V * (V + E))
-void ancestorCount(AdjList* adjList, List* L2, int* count)
-{
-    int numVertices = adjList->V;
-    for (int i = 0; i < numVertices; i++) { count[i] = 0; }
-
-    Node* currentNode = L2->head;
-    // O(V * (V + E))
-    while (currentNode)
-    {
-        int currentVertex = currentNode->vertex;
-        bool* visited = new bool[numVertices];
-        // O(V + E)
-        canReach(adjList, currentVertex, visited);
-        // O(V)
-        for (int i = 0; i < numVertices; i++)
-        {
-            if (visited[i]) { count[i]++; }
-        }
-        delete[] visited;
-    }
-}
-
-// O(V * (V + E))
-void dfsAncestors(AdjList* adjList, List* L2, bool* inL2)
-{
-    int numVertices = adjList->V;
-    bool* noAncestors = new bool[numVertices];
-    for (int i = 0; i < numVertices; i++) { noAncestors[i] = false; }
-
-    // O(V * (V + E))
-    while (true)
-    {
-        bool addedVertexL2 = false;
-        int* count = new int[numVertices];
-        // O(V * (V + E))
-        ancestorCount(adjList, L2, count);
-        // O(V)
-        for (int i = 0; i < numVertices; i++)
-        {
-            if (noAncestors[i] || inL2[i]) { continue; }
-
-            if (count[i] == 0) { noAncestors[i] = true; }
-            else if (count[i] % 2 == 0 && !L2->contains(i))
-            {
-                L2->add(i);
-                inL2[i] = true;
-                addedVertexL2 = true;
-            }
-        }
-        delete[] count;
-        if (!addedVertexL2) { break; }
-    }
-    delete[] noAncestors;
-}
-
-// Questão 1 b
-// O(V^2 * (V + E))
+// O(V + E)
 List* computeL2_b(AdjList* adjList, List* L1)
 {
-    if (L1->head == nullptr) { return nullptr; }
-    List* L2 = new List();
+    int numVertices = adjList->V;
+    AdjList* transposedAdj = new AdjList(numVertices);
 
-    bool* inL2 = new bool[adjList->V];
-    // O(V)
-    for (int i = 0; i < adjList->V; i++) { inL2[i] = false; }
-
-    Node* temp = L1->head;
-    while (temp)
+    for (int v = 0; v < numVertices; v++)
     {
-        L2->add(temp->vertex);
-        inL2[temp->vertex] = true;
-        temp = temp->next;
+        Node* adjNode = adjList->adj[v].head;
+        while (adjNode)
+        {
+            transposedAdj->addEdge(adjNode->vertex, v);
+            adjNode = adjNode->next;
+        }
     }
-    // O(V^2 * (V + E))
-    dfsAncestors(adjList, L2, inL2);
+
+    List* L2 = new List();
+    bool* visited = new bool[numVertices];
+    bool* inL2 = new bool[numVertices];
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        visited[i] = false;
+        inL2[i] = false;
+    }
+
+    Node* current = L1->head;
+    while (current)
+    {
+        L2->add(current->vertex);
+        inL2[current->vertex] = true;
+        current = current->next;
+    }
+
+    // Recalcula L2 iterativamente
+    for (int i = 0; i < numVertices; i++) {
+        for (int j = 0; j < numVertices; j++) { visited[j] = false; }
+
+        int count = countAncestorsInL2(transposedAdj, inL2, visited, i);
+
+        if (count % 2 == 1 && !inL2[i]) {
+            L2->add(i);
+            inL2[i] = true;
+        }
+    }
+
+    delete[] visited;
     delete[] inL2;
+    delete transposedAdj;
 
     return L2;
 }
+
 
 int findSons(AdjList* adjList, Vertex root, Vertex* parent)
 {
