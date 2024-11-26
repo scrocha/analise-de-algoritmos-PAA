@@ -133,14 +133,14 @@ void ancestorCount(AdjList* adjList, List* L2, int* count)
     }
 }
 
-// O(V^2 * (V + E))
+// O(V * (V + E))
 void dfsAncestors(AdjList* adjList, List* L2, bool* inL2)
 {
     int numVertices = adjList->V;
     bool* noAncestors = new bool[numVertices];
     for (int i = 0; i < numVertices; i++) { noAncestors[i] = false; }
 
-    // O(V^2 * (V + E))
+    // O(V * (V + E))
     while (true)
     {
         bool addedVertexL2 = false;
@@ -191,83 +191,98 @@ List* computeL2_b(AdjList* adjList, List* L1)
     return L2;
 }
 
-int findRoot(AdjList* adjList)
+int findSons(AdjList* adjList, Vertex root, Vertex* parent)
 {
     int numVertices = adjList->V;
-    bool* hasAncestors = new bool[numVertices];
-    for (int i = 0; i < numVertices; i++) { hasAncestors[i] = false; }
 
-    int root = -1;
+    QueueNode* queue = new QueueNode(root);
+    parent[root] = root;
+    int count = 0;
+
+    while (!queue->empty())
+    {
+        Vertex currentVertex = queue->pop();
+        Node* adjNode = adjList->adj[currentVertex].head;
+        while (adjNode)
+        {
+            if (parent[adjNode->vertex] == -1)
+            {
+                parent[adjNode->vertex] = currentVertex;
+                queue->push(adjNode->vertex);
+                count++;
+            }
+            adjNode = adjNode->next;
+        }
+    }
+    delete[] queue;
+    return count;
+}
+
+Vertex findTreeParents(AdjList* adjList, Vertex* parent)
+{
+    int numVertices = adjList->V;
+    bool* hasParent = new bool[numVertices];
+    for (int i = 0; i < numVertices; i++) { parent[i] = -1; hasParent[i] = false; }
+
+    Vertex root = -1;
     while (true)
     {
         bool foundRoot = false;
         for (int i = 0; i < numVertices; i++)
         {
-            if (hasAncestors[i]) { continue; }
+            if (hasParent[i]) { continue; }
 
-            bool* visited = new bool[numVertices];
-            canReach(adjList, i, visited);
-            int count = 0;
-
-            for (int j = 0; j < numVertices; j++)
-            {
-                if (visited[j])
-                {
-                    hasAncestors[j] = true;
-                    count++;
-                }
-            }
-
-            delete[] visited;
-
-            if (count == numVertices - 2)
-            {
-                root = i;
-                foundRoot = true;
-                break;
-            }
+            int count = findSons(adjList, i, parent);
+            if (count >= numVertices - 2) { root = i; foundRoot = true; break; }
+            else { hasParent[i] = true; parent[i] = -1; }
         }
         if (foundRoot) { break; }
     }
-    delete[] hasAncestors;
-
+    delete[] hasParent;
     return root;
 }
 
-int olderCousinCount(AdjList* adjList, int vertex, List* L2)
+void olderCousinCount(AdjList* adjList, List* L2, int* count)
 {
-    int count = 0;
+    int numVertices = adjList->V;
+    Vertex* parent = new Vertex[numVertices];
+    int* layer = new int[numVertices];
+    for (int i = 0; i < numVertices; i++) { count[i] = 0; layer[i] = INT_MIN ;}
 
-    int parent = -1;
-    for (int i = 0; i < adjList->V; i++)
+    Vertex root = findTreeParents(adjList, parent);
+
+    layer[root] = 0;
+    QueueNode* queue = new QueueNode(root);
+
+    while (!queue->empty())
     {
-        Node* temp = adjList->adj[i].head;
-        while (temp) {
-            if (temp->vertex == vertex)
+        Vertex currentVertex = queue->pop();
+        Node* adjNode = adjList->adj[currentVertex].head;
+        while (adjNode)
+        {
+            layer[adjNode->vertex] = layer[currentVertex] + 1;
+            queue->push(adjNode->vertex);
+            adjNode = adjNode->next;
+        }
+    }
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        if (layer[i] == 0) { continue; }
+
+        Node* temp = L2->head;
+        while (temp)
+        {
+            if (layer[temp->vertex] == layer[i] - 1)
             {
-                parent = i;
-                break;
+                count[i]++;
             }
             temp = temp->next;
         }
-        if (parent != -1) break;
     }
 
-    if (parent == -1) return 0;
-
-    Node* sibling = adjList->adj[parent].head;
-    while (sibling)
-    {
-        if (sibling->vertex != vertex && sibling->vertex < vertex && L2->contains(sibling->vertex))
-        {
-            count++;
-        }
-        sibling = sibling->next;
-    }
-
-    return count;
 }
-
+/*
 
 void dfsOlderCousins(AdjList* adjList, List* L2) {
     int numVertices = adjList->V;
@@ -308,7 +323,7 @@ List* computeL2_c(AdjList* adjList, List* L1) {
 
     return L2;
 }
-
+*/
 // O(V + E)
 List* bfs(AdjList* adjList, Vertex start, Vertex end)
 {
@@ -552,7 +567,7 @@ Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
     // O(V)
     for (int i = 0; i < numVertices; i++)
     {
-        if (!inList[i] && maxDist[i] < minimaxValue)
+        if (!inList[i] && minimaxValue < maxDist[i])
         {
             minimaxValue = maxDist[i];
             minimaxVertex = i;
@@ -566,74 +581,93 @@ Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
 
 // Questão 4
 // O(V^3)
-List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
+void findValidVertex(WeightedAdjList* adjList, List* C, int X, bool* valids, bool* inC)
 {
-    if (C->head == nullptr) { return nullptr; }
-
     int numVertices = adjList->V;
-
-    bool* inSubgraph = new bool[numVertices];
-    for (int i = 0; i < numVertices; i++) { inSubgraph[i] = false; }
-
-    Node* currentNode = C->head;
-    int start = currentNode->vertex;
     // O(V^3)
-    while (currentNode)
+    for (int i = 0; i < numVertices; i++)
     {
+        if (inC[i] || valids[i]) { continue; }
+
         int* dist = new int[numVertices];
-        int* parent = new int[numVertices];
+        Vertex* parent = new Vertex[numVertices];
         // O(V^2)
-        Dijkstra(adjList, currentNode->vertex, dist, parent);
+        Dijkstra(adjList, i, dist, parent);
+
+        int minDist = INFPOS;
+        Vertex nearest = -1;
         // O(V)
-        for (int i = 0; i < numVertices; i++)
+        for (int j = 0; j < numVertices; j++)
         {
-            if (dist[i] <= X)
-            {
-                inSubgraph[i] = true;
-            }
+            if (inC[j] && dist[j] < minDist) { minDist = dist[j]; Vertex nearest = j; }
         }
+
+        if (minDist <= X)
+        {
+            valids[i] = true;
+            for (Vertex j = nearest; j != -1 || j != i; j = parent[j]) { valids[j] = true; }
+        }
+
         delete[] dist;
         delete[] parent;
-
-        currentNode = currentNode->next;
     }
-    int end = currentNode->vertex;
+    delete[] inC;
+}
+// O(V^3)
+List* findCheapestPath(WeightedAdjList* adjList, List* C, int X)
+{
+    List* path = new List();
+    int numVertices = adjList->V;
+    bool* valids = new bool[numVertices];
+    bool* inC = new bool[numVertices];
+    // O(V)
+    for (int i = 0; i < numVertices; i++) { valids[i] = false; inC[i] = false; }
+    
+    Node* temp = C->head;
+    Vertex start = temp->vertex;
+    while (temp)
+    {
+        inC[temp->vertex] = true;
+        valids[temp->vertex] = true;
+        temp = temp->next;
+    }
+    Vertex end = temp->vertex;
+    // O(V^3)
+    findValidVertex(adjList, C, X, valids, inC);
 
     WeightedAdjList* subgraph = new WeightedAdjList(numVertices);
     // O(V + E)
     for (int i = 0; i < numVertices; i++)
     {
-        if (inSubgraph[i])
+        if (!valids[i]) { continue; }
+
+        WeightedNode* adjNode = adjList->adj[i].head;
+        while (adjNode)
         {
-            WeightedNode* adjNode = adjList->adj[i].head;
-            while (adjNode)
+            if (valids[adjNode->vertex])
             {
-                if (inSubgraph[adjNode->vertex])
-                {
-                    subgraph->adj[i].add(adjNode->vertex, adjNode->weight);
-                }
-                adjNode = adjNode->next;
+                subgraph->addEdge(i, adjNode->vertex, adjNode->weight);
             }
+            adjNode = adjNode->next;
         }
     }
-    delete[] inSubgraph;
 
     int* dist = new int[numVertices];
-    int* parent = new int[numVertices];
+    Vertex* parent = new Vertex[numVertices];
     // O(V^2)
-    Dijkstra(subgraph, start, dist, parent);
+    Dijkstra(subgraph, 0, dist, parent);
 
-    List* path = new List();
-    for (int at = end; at != -1 || at != start; at = parent[at]) { path->add(at); }
+    for (Vertex i = end; i != -1 || i != start; i = parent[i]) { path->add(i); }
     path->add(start);
 
+    delete[] valids;
+    delete[] inC;
     delete[] dist;
     delete[] parent;
     delete[] subgraph;
 
     return path;
 }
-
 // O((V + E) * log(V))
 void MST(WeightedAdjList* adjList, int* parent, int* key, Vertex start = 0)
 {
