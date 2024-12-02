@@ -35,52 +35,31 @@ Vertex findRoot(AdjList* adjList, Vertex* parent)
     return root;
 }
 
-// O(V * log(V))
-void countDescendantsInL2(AdjList* adjList, List* L2, Vertex* parent, int* count)
-{
-    int numVertices = adjList->V;
-    int* initialCount = new int[numVertices];
-    for (int i = 0; i < numVertices; i++) { count[i] = 0; initialCount[i] = 0; }
-
-    Node* current = L2->head;
-    // O(V)
-    while (current)
-    {
-        Vertex currentVertex = current->vertex;
-        if (parent[currentVertex] != -1) { initialCount[parent[currentVertex]]++; }
-        
-        current = current->next;
-    }
-
-    // O(V * log(V))
-    for (Vertex i = 0; i < numVertices; i++)
-    {
-        if (initialCount[i] > 0)
-        {
-            count[i] += initialCount[i];
-            // O(log(V))
-            for (Vertex j = i; j != -1; j = parent[j])
-            {
-                Vertex k = parent[j];
-                count[k] += count[j];
-            }
-        }
-    }
-}
-
-// O(V * log(V))
+// O(V + E)
 List* computeL2_a(AdjList* adjList, List* L1)
 {
     int numVertices = adjList->V;
-    bool* inL2 = new bool[numVertices];
-    for (int i = 0; i < numVertices; i++) { inL2[i] = false; }
-
     List* L2 = new List();
+    bool* inL2 = new bool[numVertices];
+    bool* hasChild = new bool[numVertices];
+    bool* visited = new bool[numVertices];
+    int* descendentsCount = new int[numVertices];
+    // O(V)
+    for (int i = 0; i < numVertices; i++)
+    {
+        inL2[i] = false;
+        hasChild[i] = false;
+        visited[i] = false;
+        descendentsCount[i] = 0;
+    }
+
     Node* current = L1->head;
+    // O(V)
     while (current)
     {
         L2->add(current->vertex);
         inL2[current->vertex] = true;
+        descendentsCount[current->vertex]++;
         current = current->next;
     }
 
@@ -88,76 +67,94 @@ List* computeL2_a(AdjList* adjList, List* L1)
     // O(V + E)
     Vertex root = findRoot(adjList, parent);
 
-    while (true)
+    for (int i = 0; i < numVertices; i++)
     {
-        int* count = new int[numVertices];
-        // O(V * log(V))
-        countDescendantsInL2(adjList, L2, parent, count);
-
-        bool added = false;
-        // O(V)
-        for (int i = 0; i < numVertices; i++)
-        {
-            if (inL2[i]) { continue; }
-            else if (count[i] % 2 == 1)
-            {
-                L2->add(i);
-                inL2[i] = true;
-                added = true;
-            }
-        }
-        delete[] count;
-        if (!added) { break; }
+        if (parent[i] != -1) { hasChild[parent[i]] = true; }
     }
+    hasChild[root] = true;
+
+    QueueNode* queue = new QueueNode(-1);
+    // O(V)
+    for (int i = 0; i < numVertices; i++) { if (!hasChild[i]) { queue->push(i); } }
+    queue->pop();
+    // O(V + E)
+    while (!queue->empty())
+    {
+        Vertex currentVertex = queue->pop();
+        visited[currentVertex] = true;
+
+        if (!inL2[currentVertex] && descendentsCount[currentVertex] % 2 == 1)
+        {
+            L2->add(currentVertex);
+            inL2[currentVertex] = true;
+            descendentsCount[currentVertex]++;
+        }
+
+        Vertex parentVertex = parent[currentVertex];
+
+        if (parentVertex == -1) { break; }
+
+        descendentsCount[parentVertex] += descendentsCount[currentVertex];
+        if (!visited[parentVertex]) { queue->push(parentVertex); }
+    }
+    delete[] descendentsCount;
     delete[] parent;
+    delete[] inL2;
+    delete[] hasChild;
+    delete[] visited;
+    delete[] queue;
 
     return L2;
 }
 
-// O(V * log(V))
+// O(V + E)
 List* computeL2_b(AdjList* adjList, List* L1)
 {
     int numVertices = adjList->V;
     List* L2 = new List();
     bool* inL2 = new bool[numVertices];
+    int* ancestorsCount = new int[numVertices];
     // O(V)
-    for (int i = 0; i < numVertices; i++) { inL2[i] = false; }
+    for (int i = 0; i < numVertices; i++) { inL2[i] = false; ancestorsCount[i] = 0; }
 
     Node* current = L1->head;
     while (current)
     {
         L2->add(current->vertex);
         inL2[current->vertex] = true;
+        ancestorsCount[current->vertex]++;
         current = current->next;
     }
 
-    Vertex* parent = new int[numVertices];
+    Vertex* parent = new Vertex[numVertices];
     // O(V + E)
     Vertex root = findRoot(adjList, parent);
-    // O(V * log(V))
-    while (true)
+    QueueNode* queue = new QueueNode(root);
+
+    // O(V + E)
+    while (!queue->empty())
     {
-        bool added = false;
-        for (int i = 0; i < numVertices; i++)
+        Vertex currentVertex = queue->pop();
+        Node* adjNode = adjList->adj[currentVertex].head;
+
+        while (adjNode)
         {
-            if (inL2[i]) { continue; }
-            int count = 0;
-            // O(log(V))
-            for (Vertex j = parent[i]; j != -1; j = parent[j])
+            ancestorsCount[adjNode->vertex] += ancestorsCount[currentVertex];
+            queue->push(adjNode->vertex);
+
+            if (!inL2[adjNode->vertex] && ancestorsCount[adjNode->vertex] % 2 == 1)
             {
-                if (inL2[j]) { count++; }
+                L2->add(adjNode->vertex);
+                inL2[adjNode->vertex] = true;
+                ancestorsCount[adjNode->vertex]++;
             }
-            if (count % 2 == 1)
-            {
-                L2->add(i);
-                inL2[i] = true;
-                added = true;
-            }
+            adjNode = adjNode->next;
         }
-        if (!added) { break; }
     }
-    delete[] inL2;
+    delete[] ancestorsCount;
     delete[] parent;
+    delete[] inL2;
+    delete[] queue;
 
     return L2;
 }
@@ -181,8 +178,9 @@ void dfsPrePostOrder(AdjList* adjList, Vertex vertex, bool* visited, int* preord
 
     postorder[vertex] = postIndex++;
 }
+
 // O(V + E)
-void computePrePostOrder(AdjList* adjList, int* preorder, int* postorder)
+Vertex computePrePostOrder(AdjList* adjList, int* preorder, int* postorder, int* parent)
 {
     int numVertices = adjList->V;
     bool* visited = new bool[numVertices];
@@ -192,20 +190,22 @@ void computePrePostOrder(AdjList* adjList, int* preorder, int* postorder)
         visited[i] = false;
         preorder[i] = -1;
         postorder[i] = -1;
+        parent[i] = -1;
     }
-
-    Vertex* parent = new Vertex[numVertices];
     // O(V + E)
     Vertex root = findRoot(adjList, parent);
 
     int preIndex = 0;
     int postIndex = 0;
+    int layerCount = 0;
     // O(V + E)
     dfsPrePostOrder(adjList, root, visited, preorder, postorder, preIndex, postIndex);
 
     delete[] visited;
+    return root;
 }
 
+// O(V + E)
 List* computeL2_c(AdjList* adjList, List* L1)
 {
     int numVertices = adjList->V;
@@ -223,9 +223,10 @@ List* computeL2_c(AdjList* adjList, List* L1)
 
     int* preorder = new int[numVertices];
     int* postorder = new int[numVertices];
+    int* parent = new int[numVertices];
     // O(V + E)
-    computePrePostOrder(adjList, preorder, postorder);
-
+    computePrePostOrder(adjList, preorder, postorder, parent);
+    // O(V + E)
     while (true)
     {
         bool added = false;
@@ -240,6 +241,7 @@ List* computeL2_c(AdjList* adjList, List* L1)
                 if (preorder[current->vertex] < preorder[i]) { count++; }
                 current = current->next;
             }
+
             if (count % 2 == 1)
             {
                 L2->add(i);
@@ -250,6 +252,7 @@ List* computeL2_c(AdjList* adjList, List* L1)
         if (!added) { break; }
     }
     delete[] inL2;
+    delete[] parent;
     delete[] preorder;
     delete[] postorder;
 
@@ -546,29 +549,38 @@ void heapDijsktraMultiSource(WeightedAdjList* adjList, List* L, int* dist, Verte
 }
 
 // Questão 3
-// O((V + E) * log(V))
+// O(V^3)
 Vertex findMinimaxVertex(WeightedAdjList* adjList, List* L)
 {
     int numVertices = adjList->V;
-    int* dist = new int[numVertices];
-    Vertex* parent = new Vertex[numVertices];
-    int endVertex = -1;
-    // O((V + E) * log(V))
-    heapDijsktraMultiSource(adjList, L, dist, parent, endVertex);
 
     Vertex minimaxVertex = -1;
     int minimaxValue = INFPOS;
-    // O(V)
+    // O(V^3)
     for (int i = 0; i < numVertices; i++)
     {
-        if (dist[i] < minimaxValue)
+        if (!L->contains(i)) { continue; }
+        int* dist = new int[numVertices];
+        Vertex* parent = new Vertex[numVertices];
+        // O(V^2)
+        Dijkstra(adjList, i, dist, parent);
+
+        int maxDist = 0;
+        Node* current = L->head;
+        while (current)
         {
-            minimaxValue = dist[i];
+            if (dist[current->vertex] > maxDist) { maxDist = dist[current->vertex]; }
+            current = current->next;
+        }
+
+        if (maxDist < minimaxValue)
+        {
+            minimaxValue = maxDist;
             minimaxVertex = i;
         }
+        delete[] dist;
+        delete[] parent;
     }
-    delete[] dist;
-    delete[] parent;
 
     return minimaxVertex;
 }
@@ -765,8 +777,8 @@ pair<Vertex, Vertex> findCriticalEdge(WeightedAdjList* adjList)
     return criticalEdge;
 }
 
+
 int main()
 {
-
     return 0;
 }
